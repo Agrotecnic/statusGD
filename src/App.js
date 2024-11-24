@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { write, utils } from 'xlsx';
+import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import ImageUploader from './ImageUploader'; // Ajuste o caminho conforme necessário
+import ImageUploader from './ImageUploader';
 import './print.css';
 
 export default function App() {
   const [isExporting, setIsExporting] = useState(false);
+  
   // Estados principais
   const [vendedorInfo, setVendedorInfo] = useState({
     nome: "João Silva",
@@ -49,21 +50,16 @@ export default function App() {
       areas: 1,
     },
   ]);
-  // Novo estado para imagens
+
   const [images, setImages] = useState({
     area1: null,
     area2: null
   });
-   // INSIRA O NOVO CÓDIGO AQUI, LOGO APÓS O ESTADO IMAGES:
-   const handleImageUpload = useCallback((area) => (imageData) => {
-    setImages(prev => ({ ...prev, [area]: imageData }));
-  }, []);
 
   const [editingSection, setEditingSection] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
-  // eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 const [tempFormData, setTempFormData] = useState(null);
-
   const [calculatedData, setCalculatedData] = useState({
     totalVendido: 0,
     totalBonificado: 0,
@@ -78,7 +74,6 @@ const [tempFormData, setTempFormData] = useState(null);
     ticketMedioVendido: 0,
     ticketMedioBonificado: 0,
   });
-
   // Efeito para recalcular valores
   useEffect(() => {
     const totalVendido = produtos.reduce((acc, prod) => acc + prod.valorVendido, 0);
@@ -89,12 +84,6 @@ const [tempFormData, setTempFormData] = useState(null);
   
     const produtosVendidos = produtos.filter((p) => p.valorVendido > 0);
     const produtosBonificados = produtos.filter((p) => p.valorBonificado > 0);
-  
-    console.log('Total Vendido:', totalVendido);
-    console.log('Total Bonificado:', totalBonificado);
-    console.log('Total Geral:', totalGeral);
-    console.log('Total Áreas:', totalAreas);
-    console.log('Total Hectares:', totalHectares);
   
     setCalculatedData({
       totalVendido,
@@ -111,18 +100,21 @@ const [tempFormData, setTempFormData] = useState(null);
       ticketMedioBonificado: produtosBonificados.length ? totalBonificado / produtosBonificados.length : 0,
     });
   }, [produtos, areas]);
+
+  // Efeito para carregar imagens do localStorage
   useEffect(() => {
-  const savedImages = localStorage.getItem('dashboardImages');
-  if (savedImages) {
-    setImages(JSON.parse(savedImages));
-  }
-}, []);
+    const savedImages = localStorage.getItem('dashboardImages');
+    if (savedImages) {
+      setImages(JSON.parse(savedImages));
+    }
+  }, []);
 
-useEffect(() => {
-  localStorage.setItem('dashboardImages', JSON.stringify(images));
-}, [images]);
+  // Efeito para salvar imagens no localStorage
+  useEffect(() => {
+    localStorage.setItem('dashboardImages', JSON.stringify(images));
+  }, [images]);
 
-  // Funções utilitárias
+  // Função para formatar valores monetários
   const formatMoney = useCallback((value) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -130,11 +122,12 @@ useEffect(() => {
     }).format(value);
   }, []);
 
+  // Função para formatar percentuais
   const formatPercent = useCallback((value) => {
     return `${value.toFixed(1)}%`;
   }, []);
 
-  // Manipuladores de formulário
+  // Função para iniciar edição
   const handleEditStart = useCallback((type, data) => {
     setTempFormData(data);
     if (type === "produto") {
@@ -144,13 +137,14 @@ useEffect(() => {
     }
   }, []);
 
+  // Função para cancelar edição
   const handleEditCancel = useCallback(() => {
     setTempFormData(null);
     setEditingItem(null);
     setEditingSection(null);
   }, []);
 
-  // Função para adicionar produto
+  // Função para adicionar novo produto
   const addProduto = useCallback(() => {
     const newProduto = {
       nome: "Novo Produto",
@@ -162,52 +156,92 @@ useEffect(() => {
     setEditingItem(produtos.length);
   }, [produtos.length]);
 
-  // Funções de exportação
-const exportToExcel = useCallback(() => {
-  const worksheet = utils.json_to_sheet(produtos);
-  const workbook = utils.book_new();
-  utils.book_append_sheet(workbook, worksheet, "Produtos");
-  const excelBuffer = write(workbook, { bookType: 'xlsx', type: 'array' });
-  const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
-  saveAs(data, 'produtos.xlsx');
-}, [produtos]);
-
-const exportToPDF = useCallback(() => {
-  // Seleciona todos os botões pelo estilo de cor de fundo
-  const editButtons = Array.from(document.querySelectorAll('button')).filter(button =>
-    getComputedStyle(button).backgroundColor === 'rgb(37, 99, 235)'
-  );
-
-  // Oculta os botões antes da captura
-  editButtons.forEach(button => button.style.visibility = 'hidden');
-
-  setIsExporting(true);
-  const input = document.getElementById('dashboard');
-
-  html2canvas(input, {
-    scale: 2,
-    useCORS: true,
-    allowTaint: true,
-    scrollY: -window.scrollY
-  }).then((canvas) => {
-    const imgData = canvas.toDataURL('image/png');
-    const pdf = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4'
+  // Função para lidar com upload de imagem
+  const handleImageUpload = useCallback((area) => (imageData) => {
+    setImages(prev => ({ ...prev, [area]: imageData }));
+  }, []);
+  // Função para exportar para Excel
+  const exportToExcel = useCallback(() => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Produtos');
+  
+    // Adicionar cabeçalhos
+    const headers = ['Produto', 'Valor Vendido', 'Valor Bonificado', 'Áreas', 'Total'];
+    worksheet.addRow(headers);
+  
+    // Adicionar dados
+    produtos.forEach(produto => {
+      const total = produto.valorVendido + produto.valorBonificado;
+      worksheet.addRow([
+        produto.nome,
+        produto.valorVendido,
+        produto.valorBonificado,
+        produto.areas,
+        total
+      ]);
     });
 
-    const width = pdf.internal.pageSize.getWidth();
-    const height = pdf.internal.pageSize.getHeight();
-    pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+    // Adicionar linha de total
+    const totalRow = [
+      'Total Geral',
+      calculatedData.totalVendido,
+      calculatedData.totalBonificado,
+      calculatedData.totalAreas,
+      calculatedData.totalGeral
+    ];
+    worksheet.addRow(totalRow);
+  
+    // Formatar células
+    worksheet.getColumn(2).numFmt = '"R$"#,##0.00';
+    worksheet.getColumn(3).numFmt = '"R$"#,##0.00';
+    worksheet.getColumn(5).numFmt = '"R$"#,##0.00';
+  
+    // Gerar o arquivo Excel
+    workbook.xlsx.writeBuffer().then(buffer => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, 'relatorio_produtos.xlsx');
+    }).catch(error => {
+      console.error('Erro ao gerar o arquivo Excel:', error);
+    });
+  }, [produtos, calculatedData]);
 
-    pdf.save('dashboard.pdf');
-    setIsExporting(false);
+  // Função para exportar para PDF
+  const exportToPDF = useCallback(() => {
+    // Seleciona todos os botões de edição pelo estilo de cor de fundo
+    const editButtons = Array.from(document.querySelectorAll('button')).filter(button =>
+      getComputedStyle(button).backgroundColor === 'rgb(37, 99, 235)'
+    );
 
-    // Mostra os botões novamente após a captura
-    editButtons.forEach(button => button.style.visibility = 'visible');
-  });
-}, [setIsExporting]);
+    // Oculta os botões antes da captura
+    editButtons.forEach(button => button.style.visibility = 'hidden');
+
+    setIsExporting(true);
+    const input = document.getElementById('dashboard');
+
+    html2canvas(input, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      scrollY: -window.scrollY
+    }).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const width = pdf.internal.pageSize.getWidth();
+      const height = pdf.internal.pageSize.getHeight();
+      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
+
+      pdf.save('dashboard.pdf');
+      setIsExporting(false);
+
+      // Mostra os botões novamente após a captura
+      editButtons.forEach(button => button.style.visibility = 'visible');
+    });
+  }, [setIsExporting]);
 
   // Estilos comuns
   const styles = {
@@ -546,431 +580,404 @@ const exportToPDF = useCallback(() => {
         </form>
       );
     });
-      // Layout Principal - Return
-  return (
-<div
-  id="dashboard"
-  className="print-dashboard"
-  style={{
-    padding: "24px",
-    backgroundColor: "#f3f4f6",
-    minHeight: "100vh",
-  }}
->
-<div>
-  {/* Conteúdo do dashboard */}
-  
-  {/* Modais */}
-  {editingSection === "info" && (
-    <Modal title="Editar Informações" onClose={handleEditCancel}>
-      <VendedorForm />
-    </Modal>
-  )}
-  {editingSection === "outroModal" && (
-    <Modal title="Outro Modal" onClose={handleEditCancel}>
-      {/* Conteúdo do outro modal */}
-    </Modal>
-  )}
-  {editingSection === "areas" && (
-    <Modal title="Editar Áreas" onClose={handleEditCancel}>
-      <AreaForm />
-    </Modal>
-  )}
-  {editingItem !== null && (
-    <Modal title="Editar Produto" onClose={handleEditCancel}>
-      <ProdutoForm />
-    </Modal>
-  )}
-</div>
-      {/* Barra de Ações */}
-      {!isExporting && (
-  <div
-    style={{
-      position: "fixed",
-      top: "20px",
-      right: "20px",
-      display: "flex",
-      gap: "8px",
-      zIndex: 900,
-    }}
-  >
-    <button onClick={addProduto} style={styles.button}>
-      Adicionar Produto
-    </button>
-    <button
-      onClick={() => handleEditStart("areas", areas)}
-      style={styles.button}
-    >
-      Editar Áreas
-    </button>
-    <button onClick={exportToExcel} style={styles.button}>
-      Exportar para Excel
-    </button>
-    <button onClick={exportToPDF} style={styles.button}>
-      Exportar para PDF
-    </button>
-  </div>
-)}
-
-      {/* Conteúdo Principal */}
+    // Layout Principal - Return
+    return (
       <div
+        id="dashboard"
+        className="print-dashboard"
         style={{
-          maxWidth: "1400px",
-          margin: "0 auto",
-          backgroundColor: "white",
-          borderRadius: "12px",
           padding: "24px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+          backgroundColor: "#f3f4f6",
+          minHeight: "100vh",
         }}
       >
-        {/* Cabeçalho */}
-        <div
-          style={{
-            marginBottom: "24px",
-            borderBottom: "1px solid #e5e7eb",
-            paddingBottom: "16px",
-            position: "relative",
-          }}
-        >
-          <button
-            onClick={() => handleEditStart("info", vendedorInfo)}
-            style={{
-              ...styles.button,
-              position: "absolute",
-              right: "0",
-              top: "0",
-            }}
-          >
-            Editar
-          </button>
-          <h1
-            style={{
-              fontSize: "28px",
-              fontWeight: "bold",
-              textAlign: "center",
-              marginBottom: "16px",
-              color: "#1f2937",
-            }}
-          >
-            Status Geração de Demanda
-          </h1>
+        {/* Modais */}
+        {editingSection === "info" && (
+          <Modal title="Editar Informações" onClose={handleEditCancel}>
+            <VendedorForm />
+          </Modal>
+        )}
+        {editingSection === "areas" && (
+          <Modal title="Editar Áreas" onClose={handleEditCancel}>
+            <AreaForm />
+          </Modal>
+        )}
+        {editingItem !== null && (
+          <Modal title="Editar Produto" onClose={handleEditCancel}>
+            <ProdutoForm />
+          </Modal>
+        )}
+  
+        {/* Barra de Ações */}
+        {!isExporting && (
           <div
             style={{
+              position: "fixed",
+              top: "20px",
+              right: "20px",
               display: "flex",
-              justifyContent: "center",
-              gap: "32px",
+              gap: "8px",
+              zIndex: 900,
             }}
           >
-            <div style={{ textAlign: "center" }}>
-              <p style={{ color: "#6b7280", fontSize: "14px" }}>
-                Representante
-              </p>
-              <p style={{ color: "#1f2937", fontWeight: "600" }}>
-                {vendedorInfo.nome}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ color: "#6b7280", fontSize: "14px" }}>Regional</p>
-              <p style={{ color: "#1f2937", fontWeight: "600" }}>
-                {vendedorInfo.regional}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ color: "#6b7280", fontSize: "14px" }}>
-                Business Unit
-              </p>
-              <p style={{ color: "#1f2937", fontWeight: "600" }}>
-                {vendedorInfo.businessUnit}
-              </p>
-            </div>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ color: "#6b7280", fontSize: "14px" }}>
-                Atualizado em
-              </p>
-              <p style={{ color: "#1f2937", fontWeight: "600" }}>
-                {vendedorInfo.dataAtualizacao}
-              </p>
-            </div>
+            <button onClick={addProduto} style={styles.button}>
+              Adicionar Produto
+            </button>
+            <button
+              onClick={() => handleEditStart("areas", areas)}
+              style={styles.button}
+            >
+              Editar Áreas
+            </button>
+            <button onClick={exportToExcel} style={styles.button}>
+              Exportar para Excel
+            </button>
+            <button onClick={exportToPDF} style={styles.button}>
+              Exportar para PDF
+            </button>
           </div>
-        </div>
-
-        {/* Grid de Cards */}
+        )}
+  
+        {/* Conteúdo Principal */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: "20px",
-            marginBottom: "20px",
+            maxWidth: "1400px",
+            margin: "0 auto",
+            backgroundColor: "white",
+            borderRadius: "12px",
+            padding: "24px",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           }}
         >
-          {/* Card - Status das Áreas */}
-          <div style={styles.card}>
-            <h2
+          {/* Cabeçalho */}
+          <div
+            style={{
+              marginBottom: "24px",
+              borderBottom: "1px solid #e5e7eb",
+              paddingBottom: "16px",
+              position: "relative",
+            }}
+          >
+            <button
+              onClick={() => handleEditStart("info", vendedorInfo)}
               style={{
-                fontSize: "20px",
-                fontWeight: "600",
-                marginBottom: "16px",
+                ...styles.button,
+                position: "absolute",
+                right: "0",
+                top: "0",
               }}
             >
-              Status das Áreas
-            </h2>
-            <div
+              Editar
+            </button>
+            <h1
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
+                fontSize: "28px",
+                fontWeight: "bold",
+                textAlign: "center",
                 marginBottom: "16px",
+                color: "#1f2937",
               }}
             >
-              <div
-                style={{
-                  backgroundColor: "#f0f9ff",
-                  padding: "16px",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    color: "#0369a1",
-                  }}
-                >
-                  {areas.emAcompanhamento}
-                </p>
-                <p style={{ color: "#1f2937" }}>Em Acompanhamento</p>
-                <p style={{ color: "#64748b", fontSize: "12px" }}>
-                  {areas.emAcompanhamento * areas.hectaresPorArea} hectares
-                </p>
-              </div>
-              <div
-                style={{
-                  backgroundColor: "#fef9c3",
-                  padding: "16px",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    color: "#ca8a04",
-                  }}
-                >
-                  {areas.aImplantar}
-                </p>
-                <p style={{ color: "#1f2937" }}>A Implantar</p>
-                <p style={{ color: "#64748b", fontSize: "12px" }}>
-                  {areas.aImplantar * areas.hectaresPorArea} hectares
-                </p>
-              </div>
-            </div>
-            <div style={{ marginTop: "12px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "4px",
-                }}
-              >
-                <span style={{ fontSize: "14px" }}>
-                  Progresso da Implantação
-                </span>
-                <span style={{ fontSize: "14px" }}>
-                  {formatPercent(calculatedData.percentualImplantacao)}
-                </span>
-              </div>
-              <div
-                style={{
-                  width: "100%",
-                  height: "8px",
-                  backgroundColor: "#e5e7eb",
-                  borderRadius: "9999px",
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${calculatedData.percentualImplantacao}%`,
-                    height: "100%",
-                    backgroundColor: "#0369a1",
-                    borderRadius: "9999px",
-                  }}
-                ></div>
-              </div>
-            </div>
-          </div>
-
-          {/* Card - Distribuição de Valores */}
-          <div style={styles.card}>
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: "600",
-                marginBottom: "16px",
-              }}
-            >
-              Distribuição de Valores
-            </h2>
+              Status Geração de Demanda
+            </h1>
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
-                gap: "12px",
+                justifyContent: "center",
+                gap: "32px",
               }}
             >
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "4px",
-                  }}
-                >
-                  <span style={{ color: "#2563eb" }}>Vendido</span>
-                  <span style={{ fontWeight: "bold" }}>
-                    {formatMoney(calculatedData.totalVendido)}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    width: "100%",
-                    height: "8px",
-                    backgroundColor: "#e5e7eb",
-                    borderRadius: "9999px",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${calculatedData.percentualVendido}%`,
-                      backgroundColor: "#2563eb",
-                      height: "100%",
-                      borderRadius: "9999px",
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "4px",
-                  }}
-                >
-                  <span style={{ color: "#16a34a" }}>Bonificado</span>
-                  <span style={{ fontWeight: "bold" }}>
-                    {formatMoney(calculatedData.totalBonificado)}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    width: "100%",
-                    height: "8px",
-                    backgroundColor: "#e5e7eb",
-                    borderRadius: "9999px",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${calculatedData.percentualBonificado}%`,
-                      backgroundColor: "#16a34a",
-                      height: "100%",
-                      borderRadius: "9999px",
-                    }}
-                  ></div>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  textAlign: "center",
-                  marginTop: "8px",
-                  padding: "12px",
-                  backgroundColor: "#f8fafc",
-                  borderRadius: "8px",
-                }}
-              >
-                <p style={{ color: "#6b7280", marginBottom: "4px" }}>
-                  Valor Total
+              <div style={{ textAlign: "center" }}>
+                <p style={{ color: "#6b7280", fontSize: "14px" }}>
+                  Representante
                 </p>
-                <p
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    color: "#1f2937",
-                  }}
-                >
-                  {formatMoney(calculatedData.totalGeral)}
+                <p style={{ color: "#1f2937", fontWeight: "600" }}>
+                  {vendedorInfo.nome}
+                </p>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ color: "#6b7280", fontSize: "14px" }}>Regional</p>
+                <p style={{ color: "#1f2937", fontWeight: "600" }}>
+                  {vendedorInfo.regional}
+                </p>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ color: "#6b7280", fontSize: "14px" }}>
+                  Business Unit
+                </p>
+                <p style={{ color: "#1f2937", fontWeight: "600" }}>
+                  {vendedorInfo.businessUnit}
+                </p>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <p style={{ color: "#6b7280", fontSize: "14px" }}>
+                  Atualizado em
+                </p>
+                <p style={{ color: "#1f2937", fontWeight: "600" }}>
+                  {vendedorInfo.dataAtualizacao}
                 </p>
               </div>
             </div>
           </div>
-
-          {/* Card - Tabela de Produtos */}
-          <div style={{ ...styles.card, gridColumn: "span 2" }}>
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: "600",
-                marginBottom: "16px",
-              }}
-            >
-              Detalhamento por Produto
-            </h2>
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th
+  
+          {/* Grid de Cards */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "20px",
+              marginBottom: "20px",
+            }}
+          >
+            {/* Card - Status das Áreas */}
+            <div style={styles.card}>
+              <h2
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "600",
+                  marginBottom: "16px",
+                }}
+              >
+                Status das Áreas
+              </h2>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                  marginBottom: "16px",
+                }}
+              >
+                <div
+                  style={{
+                    backgroundColor: "#f0f9ff",
+                    padding: "16px",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: "bold",
+                      color: "#0369a1",
+                    }}
+                  >
+                    {areas.emAcompanhamento}
+                  </p>
+                  <p style={{ color: "#1f2937" }}>Em Acompanhamento</p>
+                  <p style={{ color: "#64748b", fontSize: "12px" }}>
+                    {areas.emAcompanhamento * areas.hectaresPorArea} hectares
+                  </p>
+                </div>
+                <div
+                  style={{
+                    backgroundColor: "#fef9c3",
+                    padding: "16px",
+                    borderRadius: "8px",
+                    textAlign: "center",
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: "bold",
+                      color: "#ca8a04",
+                    }}
+                  >
+                    {areas.aImplantar}
+                  </p>
+                  <p style={{ color: "#1f2937" }}>A Implantar</p>
+                  <p style={{ color: "#64748b", fontSize: "12px" }}>
+                    {areas.aImplantar * areas.hectaresPorArea} hectares
+                  </p>
+                </div>
+              </div>
+              <div style={{ marginTop: "12px" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginBottom: "4px",
+                  }}
+                >
+                  <span style={{ fontSize: "14px" }}>
+                    Progresso da Implantação
+                  </span>
+                  <span style={{ fontSize: "14px" }}>
+                    {formatPercent(calculatedData.percentualImplantacao)}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    width: "100%",
+                    height: "8px",
+                    backgroundColor: "#e5e7eb",
+                    borderRadius: "9999px",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${calculatedData.percentualImplantacao}%`,
+                      height: "100%",
+                      backgroundColor: "#0369a1",
+                      borderRadius: "9999px",
+                    }}
+                  ></div>
+                </div>
+              </div>
+            </div>
+  
+            {/* Card - Distribuição de Valores */}
+            <div style={styles.card}>
+              <h2
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "600",
+                  marginBottom: "16px",
+                }}
+              >
+                Distribuição de Valores
+              </h2>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <span style={{ color: "#2563eb" }}>Vendido</span>
+                    <span style={{ fontWeight: "bold" }}>
+                      {formatMoney(calculatedData.totalVendido)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "8px",
+                      backgroundColor: "#e5e7eb",
+                      borderRadius: "9999px",
+                    }}
+                  >
+                    <div
                       style={{
-                        textAlign: "left",
-                        padding: "12px",
-                        borderBottom: "2px solid #e5e7eb",
+                        width: `${calculatedData.percentualVendido}%`,
+                        backgroundColor: "#2563eb",
+                        height: "100%",
+                        borderRadius: "9999px",
                       }}
-                    >
-                      Produto
-                    </th>
-                    <th
+                    ></div>
+                  </div>
+                </div>
+  
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginBottom: "4px",
+                    }}
+                  >
+                    <span style={{ color: "#16a34a" }}>Bonificado</span>
+                    <span style={{ fontWeight: "bold" }}>
+                      {formatMoney(calculatedData.totalBonificado)}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      width: "100%",
+                      height: "8px",
+                      backgroundColor: "#e5e7eb",
+                      borderRadius: "9999px",
+                    }}
+                  >
+                    <div
                       style={{
-                        textAlign: "right",
-                        padding: "12px",
-                        borderBottom: "2px solid #e5e7eb",
+                        width: `${calculatedData.percentualBonificado}%`,
+                        backgroundColor: "#16a34a",
+                        height: "100%",
+                        borderRadius: "9999px",
                       }}
-                    >
-                      Valor Vendido
-                    </th>
-                    <th
-                      style={{
-                        textAlign: "right",
-                        padding: "12px",
-                        borderBottom: "2px solid #e5e7eb",
-                      }}
-                    >
-                      Valor Bonificado
-                    </th>
-                    <th
-                      style={{
-                        textAlign: "center",
-                        padding: "12px",
-                        borderBottom: "2px solid #e5e7eb",
-                      }}
-                    >
-                      Áreas
-                    </th>
-                    <th
-                      style={{
-                        textAlign: "right",
-                        padding: "12px",
-                        borderBottom: "2px solid #e5e7eb",
-                      }}
-                    >
-                      Total
-                    </th>
-                    {!isExporting && (
+                    ></div>
+                  </div>
+                </div>
+  
+                <div
+                  style={{
+                    textAlign: "center",
+                    marginTop: "8px",
+                    padding: "12px",
+                    backgroundColor: "#f8fafc",
+                    borderRadius: "8px",
+                  }}
+                >
+                  <p style={{ color: "#6b7280", marginBottom: "4px" }}>
+                    Valor Total
+                  </p>
+                  <p
+                    style={{
+                      fontSize: "24px",
+                      fontWeight: "bold",
+                      color: "#1f2937",
+                    }}
+                  >
+                    {formatMoney(calculatedData.totalGeral)}
+                  </p>
+                </div>
+              </div>
+            </div>
+  
+            {/* Card - Tabela de Produtos */}
+            <div style={{ ...styles.card, gridColumn: "span 2" }}>
+              <h2
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "600",
+                  marginBottom: "16px",
+                }}
+              >
+                Detalhamento por Produto
+              </h2>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr>
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: "12px",
+                          borderBottom: "2px solid #e5e7eb",
+                        }}
+                      >
+                        Produto
+                      </th>
+                      <th
+                        style={{
+                          textAlign: "right",
+                          padding: "12px",
+                          borderBottom: "2px solid #e5e7eb",
+                        }}
+                      >
+                        Valor Vendido
+                      </th>
+                      <th
+                        style={{
+                          textAlign: "right",
+                          padding: "12px",
+                          borderBottom: "2px solid #e5e7eb",
+                        }}
+                      >
+                        Valor Bonificado
+                      </th>
                       <th
                         style={{
                           textAlign: "center",
@@ -978,73 +985,70 @@ const exportToPDF = useCallback(() => {
                           borderBottom: "2px solid #e5e7eb",
                         }}
                       >
-                        Ações
+                        Áreas
                       </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {produtos.map((produto, index) => (
-                    <tr
-                      key={index}
-                      style={{
-                        backgroundColor: index % 2 === 0 ? "white" : "#f8fafc",
-                      }}
-                    >
-                      <td
+                      <th
                         style={{
-                          padding: "12px",
-                          borderBottom: "1px solid #e5e7eb",
-                        }}
-                      >
-                        {produto.nome}
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px",
                           textAlign: "right",
-                          borderBottom: "1px solid #e5e7eb",
-                          color: "#2563eb",
-                        }}
-                      >
-                        {produto.valorVendido > 0
-                          ? formatMoney(produto.valorVendido)
-                          : "-"}
-                      </td>
-                      <td
-                        style={{
                           padding: "12px",
-                          textAlign: "right",
-                          borderBottom: "1px solid #e5e7eb",
-                          color: "#16a34a",
+                          borderBottom: "2px solid #e5e7eb",
                         }}
                       >
-                        {produto.valorBonificado > 0
-                          ? formatMoney(produto.valorBonificado)
-                          : "-"}
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px",
-                          textAlign: "center",
-                          borderBottom: "1px solid #e5e7eb",
-                        }}
-                      >
-                        {produto.areas}
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px",
-                          textAlign: "right",
-                          borderBottom: "1px solid #e5e7eb",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        {formatMoney(
-                          produto.valorVendido + produto.valorBonificado
-                        )}
-                      </td>
+                        Total
+                      </th>
                       {!isExporting && (
+                        <th
+                          style={{
+                            textAlign: "center",
+                            padding: "12px",
+                            borderBottom: "2px solid #e5e7eb",
+                          }}
+                        >
+                          Ações
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {produtos.map((produto, index) => (
+                      <tr
+                        key={index}
+                        style={{
+                          backgroundColor: index % 2 === 0 ? "white" : "#f8fafc",
+                        }}
+                      >
+                        <td
+                          style={{
+                            padding: "12px",
+                            borderBottom: "1px solid #e5e7eb",
+                          }}
+                        >
+                          {produto.nome}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            textAlign: "right",
+                            borderBottom: "1px solid #e5e7eb",
+                            color: "#2563eb",
+                          }}
+                        >
+                          {produto.valorVendido > 0
+                            ? formatMoney(produto.valorVendido)
+                            : "-"}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            textAlign: "right",
+                            borderBottom: "1px solid #e5e7eb",
+                            color: "#16a34a",
+                          }}
+                        >
+                          {produto.valorBonificado > 0
+                            ? formatMoney(produto.valorBonificado)
+                            : "-"}
+                        </td>
                         <td
                           style={{
                             padding: "12px",
@@ -1052,145 +1056,167 @@ const exportToPDF = useCallback(() => {
                             borderBottom: "1px solid #e5e7eb",
                           }}
                         >
-                          <button
-                            onClick={() =>
-                              handleEditStart("produto", { ...produto, index })
-                            }
+                          {produto.areas}
+                        </td>
+                        <td
+                          style={{
+                            padding: "12px",
+                            textAlign: "right",
+                            borderBottom: "1px solid #e5e7eb",
+                            fontWeight: "bold",
+                          }}
+                        >
+                          {formatMoney(
+                            produto.valorVendido + produto.valorBonificado
+                          )}
+                        </td>
+                        {!isExporting && (
+                          <td
                             style={{
-                              padding: "4px 8px",
-                              backgroundColor: "#2563eb",
-                              color: "white",
-                              border: "none",
-                              borderRadius: "4px",
-                              cursor: "pointer",
+                              padding: "12px",
+                              textAlign: "center",
+                              borderBottom: "1px solid #e5e7eb",
                             }}
                           >
-                            Editar
-                          </button>
-                        </td>
-                      )}
+                            <button
+                              onClick={() =>
+                                handleEditStart("produto", { ...produto, index })
+                              }
+                              style={{
+                                padding: "4px 8px",
+                                backgroundColor: "#2563eb",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                              }}
+                            >
+                              Editar
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                    <tr
+                      style={{ backgroundColor: "#f8fafc", fontWeight: "bold" }}
+                    >
+                      <td style={{ padding: "12px" }}>Total Geral</td>
+                      <td
+                        style={{
+                          padding: "12px",
+                          textAlign: "right",
+                          color: "#2563eb",
+                        }}
+                      >
+                        {formatMoney(calculatedData.totalVendido)}
+                      </td>
+                      <td
+                        style={{
+                          padding: "12px",
+                          textAlign: "right",
+                          color: "#16a34a",
+                        }}
+                      >
+                        {formatMoney(calculatedData.totalBonificado)}
+                      </td>
+                      <td style={{ padding: "12px", textAlign: "center" }}>
+                        {calculatedData.totalAreas}
+                      </td>
+                      <td style={{ padding: "12px", textAlign: "right" }}>
+                        {formatMoney(calculatedData.totalGeral)}
+                      </td>
+                      {!isExporting && <td></td>}
                     </tr>
-                  ))}
-                  <tr
-                    style={{ backgroundColor: "#f8fafc", fontWeight: "bold" }}
-                  >
-                    <td style={{ padding: "12px" }}>Total Geral</td>
-                    <td
-                      style={{
-                        padding: "12px",
-                        textAlign: "right",
-                        color: "#2563eb",
-                      }}
-                    >
-                      {formatMoney(calculatedData.totalVendido)}
-                    </td>
-                    <td
-                      style={{
-                        padding: "12px",
-                        textAlign: "right",
-                        color: "#16a34a",
-                      }}
-                    >
-                      {formatMoney(calculatedData.totalBonificado)}
-                    </td>
-                    <td style={{ padding: "12px", textAlign: "center" }}>
-                      {calculatedData.totalAreas}
-                    </td>
-                    <td style={{ padding: "12px", textAlign: "right" }}>
-                      {formatMoney(calculatedData.totalGeral)}
-                    </td>
-                    {!isExporting && <td></td>}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Card - Indicadores */}
-          <div style={{ ...styles.card, gridColumn: "span 2" }}>
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: "600",
-                marginBottom: "16px",
-              }}
-            >
-              Indicadores Chave
-            </h2>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: "16px",
-              }}
-            >
-              <div
-                style={{
-                  backgroundColor: "#f0f9ff",
-                  padding: "16px",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <p style={{ color: "#1f2937" }}>Valor Médio/Hectare</p>
-                <p
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    color: "#0369a1",
-                  }}
-                >
-                  {formatMoney(calculatedData.valorMedioHectare)}
-                </p>
-              </div>
-              <div
-                style={{
-                  backgroundColor: "#f0fdf4",
-                  padding: "16px",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <p style={{ color: "#1f2937" }}>Total Hectares</p>
-                <p
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    color: "#16a34a",
-                  }}
-                >
-                  {calculatedData.totalHectares}
-                </p>
-              </div>
-              <div
-                style={{
-                  backgroundColor: "#fef9c3",
-                  padding: "16px",
-                  borderRadius: "8px",
-                  textAlign: "center",
-                }}
-              >
-                <p style={{ color: "#1f2937" }}>Ticket Médio</p>
-                <p
-                  style={{
-                    fontSize: "24px",
-                    fontWeight: "bold",
-                    color: "#ca8a04",
-                  }}
-                >
-                  {formatMoney(calculatedData.ticketMedio)}
-                </p>
+                  </tbody>
+                </table>
               </div>
             </div>
-          </div>
-
-                    {/* Seção de Fotos */}
-                    <div style={styles.photoContainer}>
-                    <div style={styles.photoBox}>
-                    <ImageUploader onImageUpload={handleImageUpload('area1')} currentImage={images.area1} />
+  
+            {/* Card - Indicadores */}
+<div style={{ ...styles.card, gridColumn: "span 2" }}>
+  <h2
+    style={{
+      fontSize: "20px",
+      fontWeight: "600",
+      marginBottom: "16px",
+    }}
+  >
+    Indicadores Chave
+  </h2>
+  <div
+    style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(3, 1fr)",
+      gap: "16px",
+    }}
+  >
+    <div
+      style={{
+        backgroundColor: "#f0f9ff",
+        padding: "16px",
+        borderRadius: "8px",
+        textAlign: "center",
+      }}
+    >
+      <p style={{ color: "#1f2937" }}>Valor Médio/Hectare</p>
+      <p
+        style={{
+          fontSize: "24px",
+          fontWeight: "bold",
+          color: "#0369a1",
+        }}
+      >
+        {formatMoney(calculatedData.valorMedioHectare)}
+      </p>
+    </div>
+    <div
+      style={{
+        backgroundColor: "#f0fdf4",
+        padding: "16px",
+        borderRadius: "8px",
+        textAlign: "center",
+      }}
+    >
+      <p style={{ color: "#1f2937" }}>Total Hectares</p>
+      <p
+        style={{
+          fontSize: "24px",
+          fontWeight: "bold",
+          color: "#16a34a",
+        }}
+      >
+        {calculatedData.totalHectares}
+      </p>
+    </div>
+    <div
+      style={{
+        backgroundColor: "#fef9c3",
+        padding: "16px",
+        borderRadius: "8px",
+        textAlign: "center",
+      }}
+    >
+      <p style={{ color: "#1f2937" }}>Ticket Médio</p>
+      <p
+        style={{
+          fontSize: "24px",
+          fontWeight: "bold",
+          color: "#ca8a04",
+        }}
+      >
+        {formatMoney(calculatedData.ticketMedio)}
+      </p>
+    </div>
+  </div>
+</div>
+        
+          {/* Seção de Fotos */}
+          <div style={styles.photoContainer}>
+            <div style={styles.photoBox}>
+              <ImageUploader onImageUpload={handleImageUpload('area1')} currentImage={images.area1} />
             </div>
             <div style={styles.photoBox}>
-            <ImageUploader onImageUpload={handleImageUpload('area2')} currentImage={images.area2} />
+              <ImageUploader onImageUpload={handleImageUpload('area2')} currentImage={images.area2} />
             </div>
           </div>
         </div>
