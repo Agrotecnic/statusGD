@@ -1,48 +1,10 @@
 @media print {
-    .print-dashboard {
-      background-color: white !important;
-      padding: 0 !important;
-    }
-  
-    button {
-      display: none !important;
-    }
-  
-    input {
-      border: none !important;
-      padding: 0 !important;
-    }
-  
-    body {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-  
-    table {
-      page-break-inside: avoid;
-    }
-  
-    .no-print {
-      display: none !important;
-    }
+  .edit-button {
+    display: none !important;
   }
-  @media print {
-    .print-dashboard {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-      background-color: white !important;
-      padding: 0 !important;
-      margin: 0 !important;
-      width: 100% !important;
-      min-height: 100% !important;
-    }
   
-    .no-print {
-      display: none !important;
-    }
-  
-    @page {
-      size: auto;
-      margin: 0mm;
-    }
+  /* Adicione aqui quaisquer outros estilos de impressão que você deseja */
+  body {
+    margin: 0mm;
   }
+}

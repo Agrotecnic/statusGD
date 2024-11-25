@@ -47,6 +47,7 @@ export default function App() {
   const [editingItem, setEditingItem] = useState(null);
   const [tempFormData, setTempFormData] = useState(null);
 
+
   // Cálculos derivados
   const [calculatedData, setCalculatedData] = useState({
     totalVendido: 0,
@@ -548,7 +549,7 @@ export default function App() {
             position: "relative",
           }}
         >
-          <button
+          button
             onClick={() => handleEditStart("info", vendedorInfo)}
             style={{
               ...styles.button,
@@ -556,9 +557,8 @@ export default function App() {
               right: "0",
               top: "0",
             }}
-          >
             Editar
-          </button>
+          button{">"}
           <h1
             style={{
               fontSize: "28px",
@@ -978,6 +978,7 @@ export default function App() {
                             cursor: "pointer",
                           }}
                         >
+
                           Editar
                         </button>
                       </td>

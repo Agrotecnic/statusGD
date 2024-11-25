@@ -364,7 +364,7 @@ export default function App() {
               zIndex: 900,
             }}
           >
-            <button onClick={addProduto} style={styles.button}>
+            <button className="edit-button"onClick={addProduto} style={styles.button}>
               Adicionar Produto
             </button>
             <button
@@ -373,10 +373,10 @@ export default function App() {
             >
               Editar Áreas
             </button>
-            <button onClick={exportToExcel} style={styles.button}>
+            <button className="edit-button" onClick={exportToExcel} style={styles.button}>
               Exportar para Excel
             </button>
-            <button onClick={exportToPDF} style={styles.button}>
+            <button className="edit-button" onClick={exportToPDF} style={styles.button}>
               Exportar para PDF
             </button>
           </div>
@@ -410,6 +410,7 @@ export default function App() {
                 right: "0",
                 top: "0",
               }}
+
             >
               Editar
             </button>
