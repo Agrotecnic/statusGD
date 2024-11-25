@@ -1,0 +1,20 @@
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #dashboard, #dashboard * {
+    visibility: visible;
+  }
+  .btn-editar {
+    display: none !important;
+  }
+  #dashboard {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+h2 {
+  margin-bottom: 10px; /* Ajuste conforme necessário */
+}
