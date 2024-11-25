@@ -1,16 +1,2 @@
 [build]
-<<<<<<< HEAD
 command = "npm run build"
-publish = "build"
-
-[[redirects]]
-from = "/*"
-to = "/index.html"
-status = 200
-=======
-  command = "npm run build"
-  publish = "build"
-
-[build.environment]
-  NODE_VERSION = "20.17.0"
->>>>>>> origin/main
