@@ -1,0 +1,4 @@
+stackbitVersion: ~0.5.0
+ssgName: custom
+buildCommand: npm run build
+publishDir: build
