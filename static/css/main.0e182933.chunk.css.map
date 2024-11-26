@@ -1,0 +1,1 @@
+{"version":3,"sources":["print.css"],"names":[],"mappings":"AAAA,aACE,aACE,sBACF,CAGA,KACE,QACF,CACF","file":"main.0e182933.chunk.css","sourcesContent":["@media print {\n  .edit-button {\n    display: none !important;\n  }\n  \n  /* Adicione aqui quaisquer outros estilos de impressão que você deseja */\n  body {\n    margin: 0mm;\n  }\n}"]}
