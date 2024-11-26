@@ -1,6 +1,3 @@
 node_modules
-<<<<<<< HEAD
-=======
-build/
-.DS_Store
->>>>>>> origin/main
+# Local Netlify folder
+.netlify

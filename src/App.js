@@ -3,16 +3,47 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import netlifyIdentity from 'netlify-identity-widget';
 import ImageUploader from './components/ImageUploader';
 import Modal from './components/Modal';
 import VendedorForm from './components/VendedorForm';
 import AreaForm from './components/AreaForm';
 import ProdutoForm from './components/ProdutoForm';
 import './styles/print.css';
+import { db } from './firebase';
+import { ref, set, get } from "firebase/database";
 
+// LoginButton component
+const LoginButton = () => {
+  const handleLogin = () => {
+    console.log("Login button clicked");
+    window.netlifyIdentity.open();
+  };
 
-netlifyIdentity.init();
+  const handleLogout = () => {
+    console.log("Logout button clicked");
+    window.netlifyIdentity.logout();
+  };
+
+  return (
+    <button 
+      onClick={window.netlifyIdentity.currentUser() ? handleLogout : handleLogin}
+      style={{
+        backgroundColor: "#4CAF50",
+        color: "white",
+        padding: "10px 15px",
+        border: "none",
+        borderRadius: "5px",
+        cursor: "pointer",
+        position: 'fixed',
+        top: '20px',
+        left: '20px',
+        zIndex: 1000
+      }}
+    >
+      {window.netlifyIdentity.currentUser() ? 'Log Out' : 'Log In'}
+    </button>
+  );
+};
 
 // Estilos comuns
 const styles = {
@@ -53,79 +84,36 @@ const styles = {
     border: "2px dashed #d1d5db",
   },
 };
-
-export default function App() {
-  // Estados
+function App() {
+  const [user, setUser] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
-  
+
   // Estado das imagens
-  const [images, setImages] = useState(() => {
-    const savedImages = localStorage.getItem('dashboardImages');
-    return savedImages ? JSON.parse(savedImages) : {
-      area1: null,
-      area2: null
-    };
+  const [images, setImages] = useState({
+    area1: null,
+    area2: null
   });
 
   // Estado do vendedor
-  const [vendedorInfo, setVendedorInfo] = useState(() => {
-    const savedInfo = localStorage.getItem('vendedorInfo');
-    return savedInfo ? JSON.parse(savedInfo) : {
-      nome: "João Silva",
-      regional: "Centro-Oeste",
-      businessUnit: "Especialidades",
-      dataAtualizacao: "Novembro 2024",
-    };
+  const [vendedorInfo, setVendedorInfo] = useState({
+    nome: "",
+    regional: "",
+    businessUnit: "",
+    dataAtualizacao: "",
   });
 
   // Estado das áreas
-  const [areas, setAreas] = useState(() => {
-    const savedAreas = localStorage.getItem('areas');
-    return savedAreas ? JSON.parse(savedAreas) : {
-      emAcompanhamento: 5,
-      aImplantar: 10,
-      hectaresPorArea: 30,
-    };
+  const [areas, setAreas] = useState({
+    emAcompanhamento: 0,
+    aImplantar: 0,
+    hectaresPorArea: 0,
   });
 
   // Estado dos produtos
-  const [produtos, setProdutos] = useState(() => {
-    const savedProdutos = localStorage.getItem('produtos');
-    return savedProdutos ? JSON.parse(savedProdutos) : [
-      {
-        nome: "Nutrifull",
-        valorVendido: 24430.0,
-        valorBonificado: 24430.0,
-        areas: 2,
-      },
-      {
-        nome: "DimiLOM",
-        valorVendido: 10000.0,
-        valorBonificado: 10000.0,
-        areas: 2,
-      },
-      {
-        nome: "Dimitônico Full",
-        valorVendido: 16347.0,
-        valorBonificado: 0,
-        areas: 1,
-      },
-      {
-        nome: "TMSP Power",
-        valorVendido: 0,
-        valorBonificado: 18030.0,
-        areas: 1
-      },
-      {
-        nome: "DimiForm Plus + K400 Full",
-        valorVendido: 12200.0,
-        valorBonificado: 0,
-        areas: 1,
-      },
-    ];
-  });
+  const [produtos, setProdutos] = useState([]);
+
   // Estado para dados calculados
   const [calculatedData, setCalculatedData] = useState({
     totalVendido: 0,
@@ -142,23 +130,45 @@ export default function App() {
     ticketMedioBonificado: 0,
   });
 
-  // Efeitos para localStorage
   useEffect(() => {
-    localStorage.setItem('vendedorInfo', JSON.stringify(vendedorInfo));
-  }, [vendedorInfo]);
+    if (window.netlifyIdentity) {
+      window.netlifyIdentity.on('login', user => setUser(user));
+      window.netlifyIdentity.on('logout', () => setUser(null));
+      window.netlifyIdentity.init();
+    }
+  }, []);
 
   useEffect(() => {
-    localStorage.setItem('areas', JSON.stringify(areas));
-  }, [areas]);
+    if (user) {
+      // Carregar dados do usuário do Firebase
+      const userRef = ref(db, `users/${user.id}`);
+      get(userRef).then((snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          setVendedorInfo(data.vendedorInfo || {});
+          setAreas(data.areas || {});
+          setProdutos(data.produtos || []);
+          setImages(data.images || {});
+        }
+      });
+    }
+  }, [user]);
+
+  const saveData = useCallback(() => {
+    if (user) {
+      const userRef = ref(db, `users/${user.id}`);
+      set(userRef, {
+        vendedorInfo,
+        areas,
+        produtos,
+        images
+      });
+    }
+  }, [user, vendedorInfo, areas, produtos, images]);
 
   useEffect(() => {
-    localStorage.setItem('produtos', JSON.stringify(produtos));
-  }, [produtos]);
-
-  useEffect(() => {
-    localStorage.setItem('dashboardImages', JSON.stringify(images));
-  }, [images]);
-
+    saveData();
+  }, [saveData]);
   // Efeito para recalcular valores
   useEffect(() => {
     const totalVendido = produtos.reduce((acc, prod) => acc + prod.valorVendido, 0);
@@ -215,7 +225,8 @@ export default function App() {
   // Manipulador de imagens
   const handleImageUpload = useCallback((area) => (imageData) => {
     setImages(prev => ({ ...prev, [area]: imageData }));
-  }, []);
+    saveData();
+  }, [saveData]);
 
   // Função para adicionar produto
   const addProduto = useCallback(() => {
@@ -234,10 +245,8 @@ export default function App() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Produtos');
   
-    // Adicionar cabeçalhos
     worksheet.addRow(['Produto', 'Valor Vendido', 'Valor Bonificado', 'Áreas', 'Total']);
   
-    // Adicionar dados
     produtos.forEach(produto => {
       worksheet.addRow([
         produto.nome,
@@ -248,12 +257,10 @@ export default function App() {
       ]);
     });
   
-    // Formatar células
     worksheet.getColumn(2).numFmt = '"R$"#,##0.00';
     worksheet.getColumn(3).numFmt = '"R$"#,##0.00';
     worksheet.getColumn(5).numFmt = '"R$"#,##0.00';
   
-    // Gerar o arquivo Excel
     workbook.xlsx.writeBuffer().then(buffer => {
       const blob = new Blob([buffer], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
@@ -261,11 +268,9 @@ export default function App() {
       saveAs(blob, 'produtos.xlsx');
     });
   }, [produtos]);
-
   const exportToPDF = useCallback(() => {
-    setIsExporting(true); // Coloca isso primeiro para esconder botões
+    setIsExporting(true);
   
-    // Pequeno delay para garantir que os botões sumiram
     setTimeout(() => {
       const input = document.getElementById('dashboard');
       
@@ -298,101 +303,55 @@ export default function App() {
         
         setIsExporting(false);
       });
-    }, 100); // 100ms de delay
-  }, []);
-  // LoginButton component
-const LoginButton = () => {
-  const handleLogin = () => {
-    console.log("Login button clicked");
-    setTimeout(() => {
-      console.log("Attempting to open Netlify Identity widget");
-      netlifyIdentity.open();
     }, 100);
-  };
-  const handleLogout = () => {
-    console.log("Logout button clicked");
-    netlifyIdentity.logout();
-  };
+  }, []);
+
+  // Função para atualizar o vendedor
+  const handleVendedorUpdate = useCallback((data) => {
+    setVendedorInfo(data);
+    saveData();
+    setEditingSection(null);
+  }, [saveData]);
+
+  // Função para atualizar as áreas
+  const handleAreasUpdate = useCallback((data) => {
+    setAreas(data);
+    saveData();
+    setEditingSection(null);
+  }, [saveData]);
+
+  // Função para atualizar um produto
+  const handleProdutoUpdate = useCallback((data, index) => {
+    const newProdutos = [...produtos];
+    newProdutos[index] = data;
+    setProdutos(newProdutos);
+    saveData();
+    setEditingItem(null);
+  }, [produtos, saveData]);
+
+  // Função para remover um produto
+  const handleProdutoRemove = useCallback((index) => {
+    setProdutos(produtos.filter((_, idx) => idx !== index));
+    saveData();
+    setEditingItem(null);
+  }, [produtos, saveData]);
 
   return (
-    <button 
-      onClick={netlifyIdentity.currentUser() ? handleLogout : handleLogin}
-      style={{
-        backgroundColor: "#4CAF50", // Cor verde, você pode mudar para a cor que preferir
-        color: "white",
-        padding: "10px 15px",
-        border: "none",
-        borderRadius: "5px",
-        cursor: "pointer",
-        position: 'fixed',
-        top: '20px',
-        left: '20px', // Mudado para o lado esquerdo
-        zIndex: 1000
-      }}
-    >
-      {netlifyIdentity.currentUser() ? 'Log Out' : 'Log In'}
-    </button>
-  );
-};
-
-return (
     <div>
       {!isExporting && <LoginButton />}
-      {/* Modais */}
-      {editingSection === "info" && (
-        <Modal title="Editar Informações" onClose={handleEditCancel}>
-          <VendedorForm 
-            initialData={vendedorInfo} 
-            onSubmit={(data) => {
-              setVendedorInfo(data);
-              setEditingSection(null);
-            }} 
-          />
-        </Modal>
-      )}
-      {editingSection === "areas" && (
-        <Modal title="Editar Áreas" onClose={handleEditCancel}>
-          <AreaForm 
-            initialData={areas} 
-            onSubmit={(data) => {
-              setAreas(data);
-              setEditingSection(null);
-            }} 
-          />
-        </Modal>
-      )}
-      {editingItem !== null && (
-        <Modal title="Editar Produto" onClose={handleEditCancel}>
-          <ProdutoForm 
-            produto={produtos[editingItem]}
-            onSubmit={(data) => {
-              const newProdutos = [...produtos];
-              newProdutos[editingItem] = data;
-              setProdutos(newProdutos);
-              setEditingItem(null);
-            }}
-            onRemove={() => {
-              setProdutos(produtos.filter((_, idx) => idx !== editingItem));
-              setEditingItem(null);
-            }}
-          />
-        </Modal>
-      )}
-
-      {/* Dashboard Principal */}
+      <div id="netlify-modal"></div>
       <div
-  id="dashboard"
-  className="print-dashboard"
-  style={{
-    padding: "24px",
-    backgroundColor: "#f3f4f6",
-    minHeight: "100vh",
-    position: "relative", // Adicionado
-    width: "100%",       // Adicionado
-    margin: "0 auto"     // Adicionado
-  }}
->
-        {/* Barra de Ações */}
+        id="dashboard"
+        className="print-dashboard"
+        style={{
+          padding: "24px",
+          backgroundColor: "#f3f4f6",
+          minHeight: "100vh",
+          position: "relative",
+          width: "100%",
+          margin: "0 auto"
+        }}
+      >
         {!isExporting && (
           <div
             style={{
@@ -404,7 +363,7 @@ return (
               zIndex: 900,
             }}
           >
-            <button className="edit-button"onClick={addProduto} style={styles.button}>
+            <button onClick={addProduto} style={styles.button}>
               Adicionar Produto
             </button>
             <button
@@ -413,16 +372,14 @@ return (
             >
               Editar Áreas
             </button>
-            <button className="edit-button" onClick={exportToExcel} style={styles.button}>
+            <button onClick={exportToExcel} style={styles.button}>
               Exportar para Excel
             </button>
-            <button className="edit-button" onClick={exportToPDF} style={styles.button}>
+            <button onClick={exportToPDF} style={styles.button}>
               Exportar para PDF
             </button>
           </div>
         )}
-
-        {/* Conteúdo Principal */}
         <div
           style={{
             maxWidth: "1400px",
@@ -433,7 +390,6 @@ return (
             boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
           }}
         >
-          {/* Cabeçalho */}
           <div
             style={{
               marginBottom: "24px",
@@ -450,7 +406,6 @@ return (
                 right: "0",
                 top: "0",
               }}
-
             >
               Editar
             </button>
@@ -1011,7 +966,35 @@ return (
           </div>
         </div>
       </div>
+
+            {/* Modais */}
+            {editingSection === "info" && (
+        <Modal title="Editar Informações" onClose={handleEditCancel}>
+          <VendedorForm 
+            initialData={vendedorInfo} 
+            onSubmit={handleVendedorUpdate}
+          />
+        </Modal>
+      )}
+      {editingSection === "areas" && (
+        <Modal title="Editar Áreas" onClose={handleEditCancel}>
+          <AreaForm 
+            initialData={areas} 
+            onSubmit={handleAreasUpdate}
+          />
+        </Modal>
+      )}
+      {editingItem !== null && (
+        <Modal title="Editar Produto" onClose={handleEditCancel}>
+          <ProdutoForm 
+            produto={produtos[editingItem]}
+            onSubmit={(data) => handleProdutoUpdate(data, editingItem)}
+            onRemove={() => handleProdutoRemove(editingItem)}
+          />
+        </Modal>
+      )}
     </div>
   );
 }
 
+export { App };

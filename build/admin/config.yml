@@ -1,0 +1,18 @@
+backend:
+  name: git-gateway
+  branch: main # ou o nome da sua branch principal
+
+media_folder: "public/images/uploads" # Pasta onde as imagens serão armazenadas
+public_folder: "/images/uploads" # Caminho público para as imagens
+
+collections:
+  - name: "blog" # Nome da coleção
+    label: "Blog" # Rótulo usado na interface do usuário
+    folder: "content/blog" # A pasta onde os arquivos serão armazenados
+    create: true # Permite que os usuários criem novos arquivos na coleção
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}" # Padrão do nome do arquivo
+    fields: # Os campos para cada documento
+      - {label: "Título", name: "title", widget: "string"}
+      - {label: "Data de Publicação", name: "date", widget: "datetime"}
+      - {label: "Descrição", name: "description", widget: "text"}
+      - {label: "Corpo", name: "body", widget: "markdown"}

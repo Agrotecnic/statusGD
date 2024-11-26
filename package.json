@@ -1,15 +1,24 @@
 {
   "name": "dashboard-gd",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "private": true,
+  "homepage": "https://topagro.agrotecnico.com.br/statusGD",
   "dependencies": {
+    "@svgr/webpack": "^8.1.0",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^13.5.0",
     "exceljs": "^4.4.0",
     "file-saver": "^2.0.5",
+    "firebase": "^11.0.2",
     "html2canvas": "^1.4.1",
-    "jspdf": "^2.5.1",
+    "jspdf": "^2.5.2",
     "netlify-identity-widget": "^1.9.2",
+    "postcss": "^8.4.31",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-scripts": "^3.0.1",
+    "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -34,12 +43,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {
-    "@babel/core": "^7.26.0",
-    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
-    "@babel/preset-env": "^7.26.0",
-    "@babel/preset-react": "^7.25.9",
-    "react-scripts": "^5.0.1"
   }
 }
