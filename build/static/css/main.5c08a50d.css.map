@@ -1,0 +1,1 @@
+{"version":3,"file":"static/css/main.5c08a50d.css","mappings":"AAAA,aACE,aACE,sBACF,CAGA,KACE,QACF,CACF","sources":["styles/print.css"],"sourcesContent":["@media print {\n  .edit-button {\n    display: none !important;\n  }\n  \n  /* Adicione aqui quaisquer outros estilos de impressão que você deseja */\n  body {\n    margin: 0mm;\n  }\n}"],"names":[],"sourceRoot":""}
