@@ -3,12 +3,16 @@ import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import netlifyIdentity from 'netlify-identity-widget';
 import ImageUploader from './components/ImageUploader';
 import Modal from './components/Modal';
 import VendedorForm from './components/VendedorForm';
 import AreaForm from './components/AreaForm';
 import ProdutoForm from './components/ProdutoForm';
 import './styles/print.css';
+
+
+netlifyIdentity.init();
 
 // Estilos comuns
 const styles = {
@@ -296,8 +300,44 @@ export default function App() {
       });
     }, 100); // 100ms de delay
   }, []);
+  // LoginButton component
+const LoginButton = () => {
+  const handleLogin = () => {
+    console.log("Login button clicked");
+    setTimeout(() => {
+      console.log("Attempting to open Netlify Identity widget");
+      netlifyIdentity.open();
+    }, 100);
+  };
+  const handleLogout = () => {
+    console.log("Logout button clicked");
+    netlifyIdentity.logout();
+  };
+
   return (
+    <button 
+      onClick={netlifyIdentity.currentUser() ? handleLogout : handleLogin}
+      style={{
+        backgroundColor: "#4CAF50", // Cor verde, você pode mudar para a cor que preferir
+        color: "white",
+        padding: "10px 15px",
+        border: "none",
+        borderRadius: "5px",
+        cursor: "pointer",
+        position: 'fixed',
+        top: '20px',
+        left: '20px', // Mudado para o lado esquerdo
+        zIndex: 1000
+      }}
+    >
+      {netlifyIdentity.currentUser() ? 'Log Out' : 'Log In'}
+    </button>
+  );
+};
+
+return (
     <div>
+      {!isExporting && <LoginButton />}
       {/* Modais */}
       {editingSection === "info" && (
         <Modal title="Editar Informações" onClose={handleEditCancel}>
@@ -974,3 +1014,4 @@ export default function App() {
     </div>
   );
 }
+

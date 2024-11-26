@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import netlifyIdentity from 'netlify-identity-widget';
 
 const VendedorForm = ({ initialData, onSubmit }) => {
   const [formData, setFormData] = useState({ ...initialData });
@@ -26,9 +27,35 @@ const VendedorForm = ({ initialData, onSubmit }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    const user = netlifyIdentity.currentUser();
+
+    if (!user) {
+      alert('Por favor, faça login primeiro');
+      return;
+    }
+
+    try {
+      const response = await fetch('/.netlify/functions/saveData', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token.access_token}`
+        }
+      });
+
+      if (response.ok) {
+        alert('Dados salvos com sucesso!');
+        onSubmit(formData);
+      } else {
+        alert('Erro ao salvar dados');
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      alert('Erro ao enviar dados');
+    }
   };
 
   const handleChange = (field) => (e) => {

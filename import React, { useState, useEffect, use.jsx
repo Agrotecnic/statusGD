@@ -45,7 +45,8 @@ export default function App() {
 
   const [editingSection, setEditingSection] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
-  const [tempFormData, setTempFormData] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [_tempFormData, setTempFormData] = useState({});
 
 
   // Cálculos derivados
