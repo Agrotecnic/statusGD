@@ -1,0 +1,12 @@
+{
+  "typescript.validate.enable": false,
+  "javascript.validate.enable": false,
+  "js/ts.implicitProjectConfig.checkJs": false,
+  "files.exclude": {
+      "**/node_modules": true
+  },
+  "search.exclude": {
+      "**/node_modules": true,
+      "**/bower_components": true
+  }
+}

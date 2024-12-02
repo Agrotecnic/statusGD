@@ -1,186 +1,86 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import ImageUploader from './components/ImageUploader';
-import Modal from './components/Modal';
-import VendedorForm from './components/VendedorForm';
-import AreaForm from './components/AreaForm';
-import ProdutoForm from './components/ProdutoForm';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Modal from './components/Modal/Modal';
+import ImageUploader from './components/ImageUploader/ImageUploader';
+import VendedorForm from './components/VendedorForm/VendedorForm';
+import AreaForm from './components/AreaForm/AreaForm';
+import AreasCard from './components/AreasCard/AreasCard';
+import ProdutoForm from './components/ProdutoForm/ProdutoForm';
+import MetricasCard from './components/MetricasCard/MetricasCard';
+import ProdutosTable from './components/ProdutosTable/ProdutosTable';
+import LoadingSpinner from './components/LoadingSpinner/LoadingSpinner';
+import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
+
 import './styles/print.css';
-import { db } from './firebase';
-import { ref, set, get } from "firebase/database";
 
-// LoginButton component
-const LoginButton = () => {
-  const handleLogin = () => {
-    console.log("Login button clicked");
-    window.netlifyIdentity.open();
-  };
+// Firebase imports
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { getDatabase, ref, get, set } from 'firebase/database';
+import { initializeApp } from "firebase/app";
 
-  const handleLogout = () => {
-    console.log("Logout button clicked");
-    window.netlifyIdentity.logout();
-  };
-
-  return (
-    <button 
-      onClick={window.netlifyIdentity.currentUser() ? handleLogout : handleLogin}
-      style={{
-        backgroundColor: "#4CAF50",
-        color: "white",
-        padding: "10px 15px",
-        border: "none",
-        borderRadius: "5px",
-        cursor: "pointer",
-        position: 'fixed',
-        top: '20px',
-        left: '20px',
-        zIndex: 1000
-      }}
-    >
-      {window.netlifyIdentity.currentUser() ? 'Log Out' : 'Log In'}
-    </button>
-  );
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY || "AIzaSyA9kxKwLEdgRUwZNuR7yu7_j_4MUjTrCfg",
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "status-gd.firebaseapp.com",
+  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL || "https://status-gd-default-rtdb.firebaseio.com",
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "status-gd",
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "status-gd.firebasestorage.app",
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "956818896523",
+  appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:956818896523:web:81509b052009fddb22468e",
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-ZS16WZWMPG"
 };
 
-// Estilos comuns
-const styles = {
-  button: {
-    backgroundColor: "#2563eb",
-    color: "white",
-    padding: "8px 16px",
-    border: "none",
-    borderRadius: "4px",
-    cursor: "pointer",
-    marginRight: "8px",
-    fontWeight: "500",
-    transition: "background-color 0.2s",
-  },
-  card: {
-    backgroundColor: "white",
-    padding: "16px",
-    borderRadius: "8px",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-    marginBottom: "16px",
-  },
-  photoContainer: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "20px",
-    marginBottom: "20px",
-    gridColumn: "span 2",
-  },
-  photoBox: {
-    backgroundColor: "#f3f4f6",
-    padding: "16px",
-    borderRadius: "8px",
-    textAlign: "center",
-    minHeight: "200px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    border: "2px dashed #d1d5db",
-  },
-};
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
 function App() {
+  // Authentication states
   const [user, setUser] = useState(null);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  
+  // UI states
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
-
-  // Estado das imagens
-  const [images, setImages] = useState({
-    area1: null,
-    area2: null
-  });
-
-  // Estado do vendedor
+  
+  // Data states
+  const [images, setImages] = useState({ area1: null, area2: null });
   const [vendedorInfo, setVendedorInfo] = useState({
     nome: "",
     regional: "",
     businessUnit: "",
     dataAtualizacao: "",
   });
-
-  // Estado das áreas
   const [areas, setAreas] = useState({
     emAcompanhamento: 0,
     aImplantar: 0,
     hectaresPorArea: 0,
+    areaPotencialTotal: 0,
   });
-
-  // Estado dos produtos
   const [produtos, setProdutos] = useState([]);
 
-  // Estado para dados calculados
-  const [calculatedData, setCalculatedData] = useState({
-    totalVendido: 0,
-    totalBonificado: 0,
-    totalGeral: 0,
-    percentualVendido: 0,
-    percentualBonificado: 0,
-    totalAreas: 0,
-    totalHectares: 0,
-    valorMedioHectare: 0,
-    percentualImplantacao: 0,
-    ticketMedio: 0,
-    ticketMedioVendido: 0,
-    ticketMedioBonificado: 0,
-  });
-
-  useEffect(() => {
-    if (window.netlifyIdentity) {
-      window.netlifyIdentity.on('login', user => setUser(user));
-      window.netlifyIdentity.on('logout', () => setUser(null));
-      window.netlifyIdentity.init();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      // Carregar dados do usuário do Firebase
-      const userRef = ref(db, `users/${user.id}`);
-      get(userRef).then((snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.val();
-          setVendedorInfo(data.vendedorInfo || {});
-          setAreas(data.areas || {});
-          setProdutos(data.produtos || []);
-          setImages(data.images || {});
-        }
-      });
-    }
-  }, [user]);
-
-  const saveData = useCallback(() => {
-    if (user) {
-      const userRef = ref(db, `users/${user.id}`);
-      set(userRef, {
-        vendedorInfo,
-        areas,
-        produtos,
-        images
-      });
-    }
-  }, [user, vendedorInfo, areas, produtos, images]);
-
-  useEffect(() => {
-    saveData();
-  }, [saveData]);
-  // Efeito para recalcular valores
-  useEffect(() => {
+  // Calculated data
+  const calculatedData = useMemo(() => {
     const totalVendido = produtos.reduce((acc, prod) => acc + prod.valorVendido, 0);
     const totalBonificado = produtos.reduce((acc, prod) => acc + prod.valorBonificado, 0);
     const totalGeral = totalVendido + totalBonificado;
     const totalAreas = produtos.reduce((acc, prod) => acc + prod.areas, 0);
     const totalHectares = totalAreas * areas.hectaresPorArea;
   
-    const produtosVendidos = produtos.filter((p) => p.valorVendido > 0);
-    const produtosBonificados = produtos.filter((p) => p.valorBonificado > 0);
+    const valorMedioHectare = totalHectares ? totalGeral / totalHectares : 0;
+    const potencialVendasTotal = areas.areaPotencialTotal * valorMedioHectare;
   
-    setCalculatedData({
+    return {
       totalVendido,
       totalBonificado,
       totalGeral,
@@ -188,15 +88,15 @@ function App() {
       percentualBonificado: totalGeral ? (totalBonificado / totalGeral) * 100 : 0,
       totalAreas,
       totalHectares,
-      valorMedioHectare: totalHectares ? totalGeral / totalHectares : 0,
-      percentualImplantacao: (areas.emAcompanhamento / (areas.emAcompanhamento + areas.aImplantar)) * 100,
-      ticketMedio: produtos.length ? totalGeral / produtos.length : 0,
-      ticketMedioVendido: produtosVendidos.length ? totalVendido / produtosVendidos.length : 0,
-      ticketMedioBonificado: produtosBonificados.length ? totalBonificado / produtosBonificados.length : 0,
-    });
+      valorMedioHectare,
+      areaPotencialTotal: areas.areaPotencialTotal || 0,
+      potencialVendasTotal: potencialVendasTotal || 0,
+      percentualRealizacao: potencialVendasTotal ? (totalGeral / potencialVendasTotal) * 100 : 0,
+      percentualImplantacao: (areas.emAcompanhamento / (areas.emAcompanhamento + areas.aImplantar)) * 100
+    };
   }, [produtos, areas]);
 
-  // Funções utilitárias
+  // Utility functions
   const formatMoney = useCallback((value) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -208,7 +108,79 @@ function App() {
     return `${value.toFixed(1)}%`;
   }, []);
 
-  // Manipuladores de formulário
+  const showToast = useCallback((message, type = 'info') => {
+    toast[type](message, {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+  }, []);
+
+  // Firebase data management
+  const fetchUserData = useCallback(async (uid) => {
+    try {
+      setLoading(true);
+      const userRef = ref(db, `users/${uid}`);
+      const snapshot = await get(userRef);
+      
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        setVendedorInfo(data.vendedorInfo || {});
+        setAreas(data.areas || {});
+        setProdutos(data.produtos || []);
+        setImages(data.images || {});
+        showToast('Dados carregados com sucesso', 'success');
+      }
+    } catch (error) {
+      setError(error.message);
+      showToast('Erro ao carregar dados', 'error');
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
+
+  const saveData = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const userRef = ref(db, `users/${user.uid}`);
+      await set(userRef, {
+        vendedorInfo,
+        areas,
+        produtos,
+        images
+      });
+      showToast('Dados salvos com sucesso', 'success');
+    } catch (error) {
+      setError(error.message);
+      showToast('Erro ao salvar dados', 'error');
+      console.error('Erro ao salvar:', error);
+   } finally {
+      setLoading(false);
+    }
+  }, [user, vendedorInfo, areas, produtos, images, showToast]);
+
+  // Authentication effects
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        console.log('Usuário logado:', currentUser.email);
+        fetchUserData(currentUser.uid);
+      } else {
+        console.log('Nenhum usuário logado');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [fetchUserData]);
+
+  // Event handlers
   const handleEditStart = useCallback((type, data) => {
     if (type === "produto") {
       setEditingItem(data.index);
@@ -222,13 +194,55 @@ function App() {
     setEditingSection(null);
   }, []);
 
-  // Manipulador de imagens
-  const handleImageUpload = useCallback((area) => (imageData) => {
-    setImages(prev => ({ ...prev, [area]: imageData }));
-    saveData();
-  }, [saveData]);
+  const handleVendedorUpdate = useCallback(async (data) => {
+    try {
+      setVendedorInfo({
+        ...data,
+        dataAtualizacao: new Date().toLocaleString()
+      });
+      await saveData();
+      setEditingSection(null);
+      showToast('Informações do vendedor atualizadas', 'success');
+    } catch (error) {
+      showToast('Erro ao atualizar informações', 'error');
+    }
+  }, [saveData, showToast]);
 
-  // Função para adicionar produto
+  const handleAreasUpdate = useCallback(async (data) => {
+    try {
+      setAreas(data);
+      await saveData();
+      setEditingSection(null);
+      showToast('Áreas atualizadas', 'success');
+    } catch (error) {
+      showToast('Erro ao atualizar áreas', 'error');
+    }
+  }, [saveData, showToast]);
+
+  const handleProdutoUpdate = useCallback(async (data, index) => {
+    try {
+      const newProdutos = [...produtos];
+      newProdutos[index] = data;
+      setProdutos(newProdutos);
+      await saveData();
+      setEditingItem(null);
+      showToast('Produto atualizado', 'success');
+    } catch (error) {
+      showToast('Erro ao atualizar produto', 'error');
+    }
+  }, [produtos, saveData, showToast]);
+
+  const handleProdutoRemove = useCallback(async (index) => {
+    try {
+      setProdutos(produtos.filter((_, idx) => idx !== index));
+      await saveData();
+      setEditingItem(null);
+      showToast('Produto removido', 'success');
+    } catch (error) {
+      showToast('Erro ao remover produto', 'error');
+    }
+  }, [produtos, saveData, showToast]);
+
   const addProduto = useCallback(() => {
     const newProduto = {
       nome: "Novo Produto",
@@ -236,765 +250,350 @@ function App() {
       valorBonificado: 0,
       areas: 0,
     };
-    setProdutos((prev) => [...prev, newProduto]);
+    setProdutos(prev => [...prev, newProduto]);
     setEditingItem(produtos.length);
-  }, [produtos.length]);
+    showToast('Novo produto adicionado', 'info');
+  }, [produtos.length, showToast]);
 
-  // Funções de exportação
-  const exportToExcel = useCallback(() => {
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Produtos');
-  
-    worksheet.addRow(['Produto', 'Valor Vendido', 'Valor Bonificado', 'Áreas', 'Total']);
-  
-    produtos.forEach(produto => {
-      worksheet.addRow([
-        produto.nome,
-        produto.valorVendido,
-        produto.valorBonificado,
-        produto.areas,
-        produto.valorVendido + produto.valorBonificado
-      ]);
-    });
-  
-    worksheet.getColumn(2).numFmt = '"R$"#,##0.00';
-    worksheet.getColumn(3).numFmt = '"R$"#,##0.00';
-    worksheet.getColumn(5).numFmt = '"R$"#,##0.00';
-  
-    workbook.xlsx.writeBuffer().then(buffer => {
+  const handleImageUpload = useCallback(async (area) => {
+    return async (imageData) => {
+      try {
+        setLoading(true);
+        setImages(prev => ({ ...prev, [area]: imageData }));
+        await saveData();
+        showToast('Imagem atualizada com sucesso', 'success');
+      } catch (error) {
+        showToast('Erro ao fazer upload da imagem', 'error');
+        console.error('Erro no upload:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+  }, [saveData, showToast]);
+
+  // Export functions
+  const exportToExcel = useCallback(async () => {
+    try {
+      setLoading(true);
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Produtos');
+    
+      worksheet.addRow(['Produto', 'Valor Vendido', 'Valor Bonificado', 'Áreas', 'Total']);
+    
+      produtos.forEach(produto => {
+        worksheet.addRow([
+          produto.nome,
+          produto.valorVendido,
+          produto.valorBonificado,
+          produto.areas,
+          produto.valorVendido + produto.valorBonificado
+        ]);
+      });
+    
+      worksheet.getColumn(2).numFmt = '"R$"#,##0.00';
+      worksheet.getColumn(3).numFmt = '"R$"#,##0.00';
+      worksheet.getColumn(5).numFmt = '"R$"#,##0.00';
+    
+      const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
       });
-      saveAs(blob, 'produtos.xlsx');
-    });
-  }, [produtos]);
-  const exportToPDF = useCallback(() => {
-    setIsExporting(true);
-  
-    setTimeout(() => {
+      saveAs(blob, `relatorio_${vendedorInfo.nome}_${new Date().toISOString()}.xlsx`);
+      showToast('Relatório Excel exportado com sucesso', 'success');
+    } catch (error) {
+      showToast('Erro ao exportar Excel', 'error');
+      console.error('Erro na exportação:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [produtos, vendedorInfo.nome, showToast]);
+
+  const exportToPDF = useCallback(async () => {
+    try {
+      setIsExporting(true);
+      setLoading(true);
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const input = document.getElementById('dashboard');
       
-      html2canvas(input, {
+      const canvas = await html2canvas(input, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         scrollY: -window.scrollY,
         windowWidth: document.documentElement.offsetWidth,
         windowHeight: document.documentElement.offsetHeight
-      }).then((canvas) => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4'
-        });
-  
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const imgWidth = canvas.width;
-        const imgHeight = canvas.height;
-        const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-        
-        const imgX = (pdfWidth - imgWidth * ratio) / 2;
-        const imgY = 0;
-  
-        pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-        pdf.save('dashboard.pdf');
-        
-        setIsExporting(false);
       });
-    }, 100);
-  }, []);
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+    
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 0;
+    
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save(`dashboard_${vendedorInfo.nome}_${new Date().toISOString()}.pdf`);
+      
+      showToast('PDF exportado com sucesso', 'success');
+    } catch (error) {
+      showToast('Erro ao exportar PDF', 'error');
+      console.error('Erro na exportação:', error);
+    } finally {
+      setIsExporting(false);
+      setLoading(false);
+    }
+  }, [vendedorInfo.nome, showToast]);
 
-  // Função para atualizar o vendedor
-  const handleVendedorUpdate = useCallback((data) => {
-    setVendedorInfo(data);
-    saveData();
-    setEditingSection(null);
-  }, [saveData]);
+  // Authentication handlers
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      showToast('Login realizado com sucesso', 'success');
+    } catch (error) {
+      const errorMessage = 
+        error.code === 'auth/wrong-password' ? 'Senha incorreta' :
+        error.code === 'auth/user-not-found' ? 'Usuário não encontrado' :
+        error.code === 'auth/invalid-email' ? 'Email inválido' :
+        'Erro ao fazer login';
+      
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Função para atualizar as áreas
-  const handleAreasUpdate = useCallback((data) => {
-    setAreas(data);
-    saveData();
-    setEditingSection(null);
-  }, [saveData]);
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      await signOut(auth);
+      showToast('Logout realizado com sucesso', 'success');
+    } catch (error) {
+      showToast('Erro ao fazer logout', 'error');
+      console.error('Erro no logout:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Função para atualizar um produto
-  const handleProdutoUpdate = useCallback((data, index) => {
-    const newProdutos = [...produtos];
-    newProdutos[index] = data;
-    setProdutos(newProdutos);
-    saveData();
-    setEditingItem(null);
-  }, [produtos, saveData]);
-
-  // Função para remover um produto
-  const handleProdutoRemove = useCallback((index) => {
-    setProdutos(produtos.filter((_, idx) => idx !== index));
-    saveData();
-    setEditingItem(null);
-  }, [produtos, saveData]);
+  // Main render function
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-100">
+        <form onSubmit={handleLogin} className="p-8 bg-white rounded-lg shadow-md w-96">
+          <h2 className="mb-6 text-2xl font-bold text-center">Login</h2>
+          {error && (
+            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+              {error}
+            </div>
+          )}
+          <div className="space-y-4">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+              disabled={loading}
+            />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Senha"
+              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              className="w-full p-2 text-white bg-blue-500 rounded hover:bg-blue-600 disabled:opacity-50"
+              disabled={loading}
+            >
+              {loading ? 'Entrando...' : 'Entrar'}
+            </button>
+          </div>
+        </form>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      {!isExporting && <LoginButton />}
-      <div id="netlify-modal"></div>
-      <div
-        id="dashboard"
-        className="print-dashboard"
-        style={{
-          padding: "24px",
-          backgroundColor: "#f3f4f6",
-          minHeight: "100vh",
-          position: "relative",
-          width: "100%",
-          margin: "0 auto"
-        }}
-      >
-        {!isExporting && (
-          <div
-            style={{
-              position: "fixed",
-              top: "20px",
-              right: "20px",
-              display: "flex",
-              gap: "8px",
-              zIndex: 900,
-            }}
-          >
-            <button onClick={addProduto} style={styles.button}>
-              Adicionar Produto
-            </button>
-            <button
-              onClick={() => handleEditStart("areas", areas)}
-              style={styles.button}
-            >
-              Editar Áreas
-            </button>
-            <button onClick={exportToExcel} style={styles.button}>
-              Exportar para Excel
-            </button>
-            <button onClick={exportToPDF} style={styles.button}>
-              Exportar para PDF
-            </button>
-          </div>
-        )}
-        <div
-          style={{
-            maxWidth: "1400px",
-            margin: "0 auto",
-            backgroundColor: "white",
-            borderRadius: "12px",
-            padding: "24px",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-          }}
-        >
-          <div
-            style={{
-              marginBottom: "24px",
-              borderBottom: "1px solid #e5e7eb",
-              paddingBottom: "16px",
-              position: "relative",
-            }}
-          >
-            <button
-              onClick={() => handleEditStart("info", vendedorInfo)}
-              style={{
-                ...styles.button,
-                position: "absolute",
-                right: "0",
-                top: "0",
-              }}
-            >
-              Editar
-            </button>
-            <h1
-              style={{
-                fontSize: "28px",
-                fontWeight: "bold",
-                textAlign: "center",
-                marginBottom: "16px",
-                color: "#1f2937",
-              }}
-            >
-              Status Geração de Demanda
-            </h1>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                gap: "32px",
-              }}
-            >
-              <div style={{ textAlign: "center" }}>
-                <p style={{ color: "#6b7280", fontSize: "14px" }}>
-                  Representante
+    <ErrorBoundary>
+      <div className={`min-h-screen bg-gray-100 p-4 ${isExporting ? 'exporting' : ''}`}>
+        <div id="dashboard" className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
+          {/* Header */}
+          <header className="p-6 border-b">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold">{vendedorInfo.nome || 'Dashboard'}</h1>
+                <p className="text-gray-600">
+                  {vendedorInfo.regional} - {vendedorInfo.businessUnit}
                 </p>
-                <p style={{ color: "#1f2937", fontWeight: "600" }}>
-                  {vendedorInfo.nome}
+                <p className="text-sm text-gray-500">
+                  Última atualização: {vendedorInfo.dataAtualizacao}
                 </p>
               </div>
-              <div style={{ textAlign: "center" }}>
-                <p style={{ color: "#6b7280", fontSize: "14px" }}>Regional</p>
-                <p style={{ color: "#1f2937", fontWeight: "600" }}>
-                  {vendedorInfo.regional}
-                </p>
-              </div>
-              <div style={{ textAlign: "center" }}>
-                <p style={{ color: "#6b7280", fontSize: "14px" }}>
-                  Business Unit
-                </p>
-                <p style={{ color: "#1f2937", fontWeight: "600" }}>
-                  {vendedorInfo.businessUnit}
-                </p>
-              </div>
-              <div style={{ textAlign: "center" }}>
-                <p style={{ color: "#6b7280", fontSize: "14px" }}>
-                  Atualizado em
-                </p>
-                <p style={{ color: "#1f2937", fontWeight: "600" }}>
-                  {vendedorInfo.dataAtualizacao}
-                </p>
+              {/* Botões de exportação */}
+              <div>
+                <div className="space-x-4 no-print">
+                  <button
+                    onClick={exportToExcel}
+                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 no-print"
+                  >
+                    Exportar Excel
+                  </button>
+                  <button
+                    onClick={exportToPDF}
+                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 no-print"
+                  >
+                    Exportar PDF
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 no-print"
+                  >
+                    Sair
+                  </button>
+                </div>
+                {/* Botão de adicionar produto */}
+                <button
+                  onClick={addProduto}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 no-print"
+                >
+                  Adicionar Produto
+                </button>
+                {/* Botões de troca de imagem */}
+                <button
+                  className="text-blue-500 hover:text-blue-600 no-print"
+                  onClick={() => handleEditStart('area')}
+                >
+                  Trocar Imagem
+                </button>
               </div>
             </div>
-          </div>
-
-          {/* Grid de Cards */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "20px",
-              marginBottom: "20px",
-            }}
-          >
-            {/* Card - Status das Áreas */}
-            <div style={styles.card}>
-              <h2
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "600",
-                  marginBottom: "16px",
-                }}
-              >
-                Status das Áreas
-              </h2>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "12px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "#f0f9ff",
-                    padding: "16px",
-                    borderRadius: "8px",
-                    textAlign: "center",
-                  }}
+          </header>
+  
+          {/* Main content */}
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Vendedor Information */}
+            <div className="border rounded-lg p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Informações do Vendedor</h2>
+                <button
+                  onClick={() => handleEditStart('vendedor')}
+                  className="text-blue-500 hover:text-blue-600 no-print"
+                  disabled={loading}
                 >
-                  <p
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "bold",
-                      color: "#0369a1",
-                    }}
-                  >
-                    {areas.emAcompanhamento}
-                  </p>
-                  <p style={{ color: "#1f2937" }}>Em Acompanhamento</p>
-                  <p style={{ color: "#64748b", fontSize: "12px" }}>
-                    {areas.emAcompanhamento * areas.hectaresPorArea} hectares
-                  </p>
-                </div>
-                <div
-                  style={{
-                    backgroundColor: "#fef9c3",
-                    padding: "16px",
-                    borderRadius: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "bold",
-                      color: "#ca8a04",
-                    }}
-                  >
-                    {areas.aImplantar}
-                  </p>
-                  <p style={{ color: "#1f2937" }}>A Implantar</p>
-                  <p style={{ color: "#64748b", fontSize: "12px" }}>
-                    {areas.aImplantar * areas.hectaresPorArea} hectares
-                  </p>
-                </div>
+                  Editar
+                </button>
               </div>
-              <div style={{ marginTop: "12px" }}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginBottom: "4px",
-                  }}
-                >
-                  <span style={{ fontSize: "14px" }}>
-                    Progresso da Implantação
-                  </span>
-                  <span style={{ fontSize: "14px" }}>
-                    {formatPercent(calculatedData.percentualImplantacao)}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    width: "100%",
-                    height: "8px",
-                    backgroundColor: "#e5e7eb",
-                    borderRadius: "9999px",
-                    overflow: "hidden",
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${calculatedData.percentualImplantacao}%`,
-                      height: "100%",
-                      backgroundColor: "#0369a1",
-                      borderRadius: "9999px",
-                    }}
-                  ></div>
-                </div>
+              <div className="space-y-2">
+                <p><strong>Nome:</strong> {vendedorInfo.nome}</p>
+                <p><strong>Regional:</strong> {vendedorInfo.regional}</p>
+                <p><strong>Business Unit:</strong> {vendedorInfo.businessUnit}</p>
               </div>
             </div>
-
-            {/* Card - Distribuição de Valores */}
-            <div style={styles.card}>
-              <h2
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "600",
-                  marginBottom: "16px",
-                }}
-              >
-                Distribuição de Valores
-              </h2>
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    <span style={{ color: "#2563eb" }}>Vendido</span>
-                    <span style={{ fontWeight: "bold" }}>
-                      {formatMoney(calculatedData.totalVendido)}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "8px",
-                      backgroundColor: "#e5e7eb",
-                      borderRadius: "9999px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${calculatedData.percentualVendido}%`,
-                        backgroundColor: "#2563eb",
-                        height: "100%",
-                        borderRadius: "9999px",
-                      }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    <span style={{ color: "#16a34a" }}>Bonificado</span>
-                    <span style={{ fontWeight: "bold" }}>
-                      {formatMoney(calculatedData.totalBonificado)}
-                    </span>
-                  </div>
-                  <div
-                    style={{
-                      width: "100%",
-                      height: "8px",
-                      backgroundColor: "#e5e7eb",
-                      borderRadius: "9999px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: `${calculatedData.percentualBonificado}%`,
-                        backgroundColor: "#16a34a",
-                        height: "100%",
-                        borderRadius: "9999px",
-                      }}
-                    ></div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    textAlign: "center",
-                    marginTop: "8px",
-                    padding: "12px",
-                    backgroundColor: "#f8fafc",
-                    borderRadius: "8px",
-                  }}
-                >
-                  <p style={{ color: "#6b7280", marginBottom: "4px" }}>
-                    Valor Total
-                  </p>
-                  <p
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "bold",
-                      color: "#1f2937",
-                    }}
-                  >
-                    {formatMoney(calculatedData.totalGeral)}
-                  </p>
-                </div>
+  
+            {/* Areas Card */}
+            <AreasCard
+              data={areas}
+              formatPercent={formatPercent}
+              onEdit={() => handleEditStart('areas')}
+            />
+  
+            {/* Images Upload */}
+            <div className="border rounded-lg p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Imagens</h2>
               </div>
-            </div>
-
-            {/* Card - Tabela de Produtos */}
-            <div style={{ ...styles.card, gridColumn: "span 2" }}>
-              <h2
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "600",
-                  marginBottom: "16px",
-                }}
-              >
-                Detalhamento por Produto
-              </h2>
-              <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
-                  <thead>
-                    <tr>
-                      <th
-                        style={{
-                          textAlign: "left",
-                          padding: "12px",
-                          borderBottom: "2px solid #e5e7eb",
-                        }}
-                      >
-                        Produto
-                      </th>
-                      <th
-                        style={{
-                          textAlign: "right",
-                          padding: "12px",
-                          borderBottom: "2px solid #e5e7eb",
-                        }}
-                      >
-                        Valor Vendido
-                      </th>
-                      <th
-                        style={{
-                          textAlign: "right",
-                          padding: "12px",
-                          borderBottom: "2px solid #e5e7eb",
-                        }}
-                      >
-                        Valor Bonificado
-                      </th>
-                      <th
-                        style={{
-                          textAlign: "center",
-                          padding: "12px",
-                          borderBottom: "2px solid #e5e7eb",
-                        }}
-                      >
-                        Áreas
-                      </th>
-                      <th
-                        style={{
-                          textAlign: "right",
-                          padding: "12px",
-                          borderBottom: "2px solid #e5e7eb",
-                        }}
-                      >
-                        Total
-                      </th>
-                      {!isExporting && (
-                        <th
-                          style={{
-                            textAlign: "center",
-                            padding: "12px",
-                            borderBottom: "2px solid #e5e7eb",
-                          }}
-                        >
-                          Ações
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {produtos.map((produto, index) => (
-                      <tr
-                        key={index}
-                        style={{
-                          backgroundColor: index % 2 === 0 ? "white" : "#f8fafc",
-                        }}
-                      >
-                        <td
-                          style={{
-                            padding: "12px",
-                            borderBottom: "1px solid #e5e7eb",
-                          }}
-                        >
-                          {produto.nome}
-                        </td>
-                        <td
-                          style={{
-                            padding: "12px",
-                            textAlign: "right",
-                            borderBottom: "1px solid #e5e7eb",
-                            color: "#2563eb",
-                          }}
-                        >
-                          {produto.valorVendido > 0
-                            ? formatMoney(produto.valorVendido)
-                            : "-"}
-                        </td>
-                        <td
-                          style={{
-                            padding: "12px",
-                            textAlign: "right",
-                            borderBottom: "1px solid #e5e7eb",
-                            color: "#16a34a",
-                          }}
-                        >
-                          {produto.valorBonificado > 0
-                            ? formatMoney(produto.valorBonificado)
-                            : "-"}
-                        </td>
-                        <td
-                          style={{
-                            padding: "12px",
-                            textAlign: "center",
-                            borderBottom: "1px solid #e5e7eb",
-                          }}
-                        >
-                          {produto.areas}
-                        </td>
-                        <td
-                          style={{
-                            padding: "12px",
-                            textAlign: "right",
-                            borderBottom: "1px solid #e5e7eb",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          {formatMoney(
-                            produto.valorVendido + produto.valorBonificado
-                          )}
-                        </td>
-                        {!isExporting && (
-                          <td
-                            style={{
-                              padding: "12px",
-                              textAlign: "center",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            <button
-                              onClick={() =>
-                                handleEditStart("produto", { ...produto, index })
-                              }
-                              style={{
-                                padding: "4px 8px",
-                                backgroundColor: "#2563eb",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "4px",
-                                cursor: "pointer",
-                              }}
-                            >
-                              Editar
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                    <tr style={{ backgroundColor: "#f8fafc", fontWeight: "bold" }}>
-                      <td style={{ padding: "12px" }}>Total Geral</td>
-                      <td
-                        style={{
-                          padding: "12px",
-                          textAlign: "right",
-                          color: "#2563eb",
-                        }}
-                      >
-                        {formatMoney(calculatedData.totalVendido)}
-                      </td>
-                      <td
-                        style={{
-                          padding: "12px",
-                          textAlign: "right",
-                          color: "#16a34a",
-                        }}
-                      >
-                        {formatMoney(calculatedData.totalBonificado)}
-                      </td>
-                      <td style={{ padding: "12px", textAlign: "center" }}>
-                        {calculatedData.totalAreas}
-                      </td>
-                      <td style={{ padding: "12px", textAlign: "right" }}>
-                        {formatMoney(calculatedData.totalGeral)}
-                      </td>
-                      {!isExporting && <td></td>}
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Card - Indicadores */}
-            <div style={{ ...styles.card, gridColumn: "span 2" }}>
-              <h2
-                style={{
-                  fontSize: "20px",
-                  fontWeight: "600",
-                  marginBottom: "16px",
-                }}
-              >
-                Indicadores Chave
-              </h2>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
-                  gap: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    backgroundColor: "#f0f9ff",
-                    padding: "16px",
-                    borderRadius: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  <p style={{ color: "#1f2937" }}>Valor Médio/Hectare</p>
-                  <p
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "bold",
-                      color: "#0369a1",
-                    }}
-                  >
-                    {formatMoney(calculatedData.valorMedioHectare)}
-                  </p>
-                </div>
-                <div
-                  style={{
-                    backgroundColor: "#f0fdf4",
-                    padding: "16px",
-                    borderRadius: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  <p style={{ color: "#1f2937" }}>Total Hectares</p>
-                  <p
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "bold",
-                      color: "#16a34a",
-                    }}
-                  >
-                    {calculatedData.totalHectares}
-                  </p>
-                </div>
-                <div
-                  style={{
-                    backgroundColor: "#fef9c3",
-                    padding: "16px",
-                    borderRadius: "8px",
-                    textAlign: "center",
-                  }}
-                >
-                  <p style={{ color: "#1f2937" }}>Ticket Médio</p>
-                  <p
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "bold",
-                      color: "#ca8a04",
-                    }}
-                  >
-                    {formatMoney(calculatedData.ticketMedio)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Seção de Fotos */}
-            <div style={styles.photoContainer}>
-              <div style={styles.photoBox}>
+              <div className="grid grid-cols-2 gap-4">
                 <ImageUploader
-                  onImageUpload={handleImageUpload('area1')}
-                  currentImage={images.area1}
+                  initialImage={images.area1}
+                  onUpload={handleImageUpload('area1')}
+                  label="Área 1"
+                  disabled={loading}
                 />
-              </div>
-              <div style={styles.photoBox}>
                 <ImageUploader
-                  onImageUpload={handleImageUpload('area2')}
-                  currentImage={images.area2}
+                  initialImage={images.area2}
+                  onUpload={handleImageUpload('area2')}
+                  label="Área 2"
+                  disabled={loading}
                 />
               </div>
             </div>
+  
+            {/* Metrics */}
+            <MetricasCard data={calculatedData} formatMoney={formatMoney} formatPercent={formatPercent} />
+          </div>
+  
+          {/* Products Table */}
+          <div className="p-6">
+            <ProdutosTable
+              produtos={produtos}
+              onEdit={handleEditStart}
+              onAdd={addProduto}
+              formatMoney={formatMoney}
+              disabled={loading}
+            />
           </div>
         </div>
+  
+        {/* Modals */}
+        {editingSection === 'vendedor' && (
+          <Modal onClose={handleEditCancel}>
+            <VendedorForm
+              initialData={vendedorInfo}
+              onSubmit={handleVendedorUpdate}
+              onCancel={handleEditCancel}
+              isLoading={loading}
+            />
+          </Modal>
+        )}
+        {editingSection === 'areas' && (
+          <Modal onClose={handleEditCancel}>
+            <AreaForm
+              initialData={areas}
+              onSubmit={handleAreasUpdate}
+              onCancel={handleEditCancel}
+              isLoading={loading}
+            />
+          </Modal>
+        )}
+        {editingItem !== null && (
+          <Modal onClose={handleEditCancel}>
+            <ProdutoForm
+              initialData={produtos[editingItem]}
+              onSubmit={(data) => handleProdutoUpdate(data, editingItem)}
+              onCancel={handleEditCancel}
+              onDelete={() => handleProdutoRemove(editingItem)}
+              isLoading={loading}
+            />
+          </Modal>
+        )}
+  
+        {/* Global loading spinner */}
+        {loading && <LoadingSpinner />}
+        
+        {/* Toast notifications */}
+        <ToastContainer />
       </div>
-
-            {/* Modais */}
-            {editingSection === "info" && (
-        <Modal title="Editar Informações" onClose={handleEditCancel}>
-          <VendedorForm 
-            initialData={vendedorInfo} 
-            onSubmit={handleVendedorUpdate}
-          />
-        </Modal>
-      )}
-      {editingSection === "areas" && (
-        <Modal title="Editar Áreas" onClose={handleEditCancel}>
-          <AreaForm 
-            initialData={areas} 
-            onSubmit={handleAreasUpdate}
-          />
-        </Modal>
-      )}
-      {editingItem !== null && (
-        <Modal title="Editar Produto" onClose={handleEditCancel}>
-          <ProdutoForm 
-            produto={produtos[editingItem]}
-            onSubmit={(data) => handleProdutoUpdate(data, editingItem)}
-            onRemove={() => handleProdutoRemove(editingItem)}
-          />
-        </Modal>
-      )}
-    </div>
+    </ErrorBoundary>
   );
 }
 
-export { App };
+export default App;

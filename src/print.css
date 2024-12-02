@@ -1,23 +1,98 @@
 @media print {
+  /* Oculta todos os elementos por padrão */
   body * {
     visibility: hidden;
   }
-  #dashboard, #dashboard * {
+
+  /* Mostra apenas o dashboard e seus elementos */
+  #dashboard,
+  #dashboard * {
     visibility: visible;
   }
-  .btn-editar {
+
+  /* Oculta elementos específicos para exportação/impressão */
+  .no-print,
+  button,
+  [class*="button"],
+  .btn-editar,
+  .export-buttons,
+  [class*="Exportar"],
+  [class*="exportar"],
+  [class*="Sair"],
+  [class*="Editar"],
+  [class*="editar"],
+  [class*="Trocar"],
+  [class*="Adicionar"],
+  .actions-column,
+  td:last-child,
+  th:last-child,
+  [class*="action"],
+  [class*="Action"] {
     display: none !important;
+    visibility: hidden !important;
   }
+
+  /* Remove todos os botões de ação */
+  #dashboard button,
+  #dashboard .btn,
+  #dashboard [role="button"],
+  #dashboard input[type="button"],
+  #dashboard input[type="submit"],
+  #dashboard input[type="file"],
+  #dashboard .edit-button,
+  #dashboard .export-button {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* Estilo específico para o dashboard na impressão */
   #dashboard {
     position: absolute;
     left: 0;
     top: 0;
     width: 100%;
+    background: white !important;
+    padding: 20px !important;
+    margin: 0 !important;
   }
-}
-h2 {
-  margin-bottom: 10px; /* Ajuste conforme necessário */
-}
-.netlify-identity-widget {
-  z-index: 10000 !important;
+
+  /* Remove espaços reservados para botões */
+  .space-x-4,
+  .gap-4 > *:last-child,
+  [class*="flex"] > button,
+  [class*="grid"] > button {
+    display: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Ajusta a coluna de ações na tabela */
+  table th:last-child,
+  table td:last-child {
+    display: none !important;
+  }
+
+  /* Remove os botões de troca de imagem */
+  .image-upload-button,
+  [class*="trocar"],
+  [class*="Trocar"] {
+    display: none !important;
+  }
+
+  /* Ajusta margens e paddings para impressão */
+  * {
+    margin: 0 !important;
+    padding: 5px !important;
+  }
+
+  /* Garante que textos e números sejam visíveis */
+  .text-2xl,
+  .font-medium,
+  .font-semibold,
+  td,
+  th,
+  p {
+    visibility: visible !important;
+    color: black !important;
+  }
 }

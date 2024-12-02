@@ -1,6 +1,22 @@
 {
-    "compilerOptions": {
-      "baseUrl": "src"
-    },
-    "include": ["src"]
-  }
+  "compilerOptions": {
+    "baseUrl": "src",
+    "jsx": "react",
+    "checkJs": false,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "moduleResolution": "node",
+    "allowJs": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "noImplicitAny": false,
+    "strict": false
+  },
+  "include": ["src"],
+  "exclude": [
+    "node_modules",
+    "**/node_modules/*",
+    "build",
+    "dist"
+  ]
+}
