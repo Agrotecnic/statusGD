@@ -2,23 +2,28 @@ import React, { useState } from 'react';
 
 const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
   const [formData, setFormData] = useState({
-    emAcompanhamento: initialData.emAcompanhamento || 0,
-    aImplantar: initialData.aImplantar || 0,
-    médiahectaresdasArea: initialData.médiahectaresdasArea || 0,
-    areaPotencialTotal: initialData.areaPotencialTotal || 0  // Alterado para areaPotencialTotal
+    emAcompanhamento: initialData.emAcompanhamento || '',
+    aImplantar: initialData.aImplantar || '',
+    hectaresPorArea: initialData.hectaresPorArea || '',
+    areaPotencialTotal: initialData.areaPotencialTotal || ''
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: parseFloat(value) || 0
+      [name]: value === '' ? '' : parseFloat(value)
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    // Converte strings vazias para 0 antes de enviar
+    const formattedData = Object.keys(formData).reduce((acc, key) => {
+      acc[key] = formData[key] === '' ? 0 : parseFloat(formData[key]);
+      return acc;
+    }, {});
+    onSubmit(formattedData);
   };
 
   return (
@@ -61,12 +66,12 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-        Média hectares das Area
+          Hectares por Área
         </label>
         <input
           type="number"
-          name="médiahectaresdasArea"
-          value={formData.médiahectaresdasArea}
+          name="hectaresPorArea"
+          value={formData.hectaresPorArea}
           onChange={handleChange}
           min="0"
           step="0.1"
@@ -78,7 +83,7 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Área Potencial Total (ha)
+          Área Potencial Total
         </label>
         <input
           type="number"

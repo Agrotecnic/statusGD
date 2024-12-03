@@ -96,20 +96,38 @@ function App() {
   }, []);
 
   // Calculated data using useMemo
+  // No App.js, atualize o useMemo do calculatedData
   const calculatedData = useMemo(() => {
-    const totalVendido = produtos.reduce((acc, prod) => acc + (prod.valorVendido || 0), 0);
-    const totalBonificado = produtos.reduce((acc, prod) => acc + (prod.valorBonificado || 0), 0);
+    // Função para converter valores vazios ou inválidos para números
+    const getNumericValue = (value) => {
+      if (value === '' || value === null || value === undefined) return 0;
+      const numValue = parseFloat(value);
+      return isNaN(numValue) ? 0 : numValue;
+    };
+  
+    // Cálculos básicos
+    const totalVendido = produtos.reduce((acc, prod) => acc + getNumericValue(prod.valorVendido), 0);
+    const totalBonificado = produtos.reduce((acc, prod) => acc + getNumericValue(prod.valorBonificado), 0);
     const totalGeral = totalVendido + totalBonificado;
-    const totalAreas = produtos.reduce((acc, prod) => acc + (prod.areas || 0), 0);
-    const totalHectares = totalAreas * (areas.médiahectaresdasArea || 0);
-
-    const valorMedioHectare = totalHectares ? totalGeral / totalHectares : 0;
-    const potencialVendasTotal = (areas.areaPotencialTotal || 0) * valorMedioHectare;
+    const totalAreas = produtos.reduce((acc, prod) => acc + getNumericValue(prod.areas), 0);
     
-    const percentualImplantacao = areas.emAcompanhamento && areas.aImplantar
-      ? (areas.emAcompanhamento / (areas.emAcompanhamento + areas.aImplantar)) * 100
-      : 0;
-
+    // Cálculo específico da média por hectare
+    const hectaresPorArea = getNumericValue(areas.hectaresPorArea);
+    const totalHectares = totalAreas * hectaresPorArea;
+    
+    // Cálculo do valor médio por hectare
+    const valorMedioHectare = totalHectares > 0 ? totalGeral / totalHectares : 0;
+  
+    // Outros cálculos
+    const areaPotencialTotal = getNumericValue(areas.areaPotencialTotal);
+    const potencialVendasTotal = areaPotencialTotal * valorMedioHectare;
+  
+    const percentualImplantacao = 
+      getNumericValue(areas.emAcompanhamento) + getNumericValue(areas.aImplantar) > 0
+        ? (getNumericValue(areas.emAcompanhamento) / 
+           (getNumericValue(areas.emAcompanhamento) + getNumericValue(areas.aImplantar))) * 100
+        : 0;
+  
     return {
       totalVendido,
       totalBonificado,
@@ -118,8 +136,9 @@ function App() {
       percentualBonificado: totalGeral ? (totalBonificado / totalGeral) * 100 : 0,
       totalAreas,
       totalHectares,
+      hectaresPorArea,  // Adicionado aqui
       valorMedioHectare,
-      areaPotencialTotal: areas.areaPotencialTotal || 0,
+      areaPotencialTotal,
       potencialVendasTotal,
       percentualRealizacao: potencialVendasTotal ? (totalGeral / potencialVendasTotal) * 100 : 0,
       percentualImplantacao
@@ -467,42 +486,41 @@ const handleProdutoUpdate = useCallback(async (data, index) => {
         <div id="dashboard" className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
           {/* Header */}
           <header className="p-6 border-b">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold">{vendedorInfo.nome || 'Dashboard'}</h1>
-                <p className="text-gray-600">
-                  {vendedorInfo.regional} - {vendedorInfo.businessUnit}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Última atualização: {vendedorInfo.dataAtualizacao}
-                </p>
-              </div>
-              <div className="space-x-4 no-print">
-                <button
-                  onClick={exportToExcel}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
-                  disabled={loading || isExporting}
-                >
-                  Exportar Excel
-                </button>
-                <button
-                  onClick={exportToPDF}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-                  disabled={loading || isExporting}
-                >
-                  Exportar PDF
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
-                  disabled={loading}
-                >
-                  Sair
-                </button>
-              </div>
-            </div>
-          </header>
-
+  <div className="flex justify-between items-center">
+    <div>
+      <h1 className="text-2xl font-bold">{vendedorInfo.nome || 'Dashboard'}</h1>
+      <p className="text-gray-600">
+        {vendedorInfo.regional} - {vendedorInfo.businessUnit}
+      </p>
+      <p className="text-sm text-gray-500">
+        Última atualização: {vendedorInfo.dataAtualizacao}
+      </p>
+    </div>
+    <div className="space-x-4 hide-on-print">  {/* Alterado aqui */}
+      <button
+        onClick={exportToExcel}
+        className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 hide-on-print"
+        disabled={loading || isExporting}
+      >
+        Exportar Excel
+      </button>
+      <button
+        onClick={exportToPDF}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 hide-on-print"
+        disabled={loading || isExporting}
+      >
+        Exportar PDF
+      </button>
+      <button
+        onClick={handleLogout}
+        className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hide-on-print"
+        disabled={loading}
+      >
+        Sair
+      </button>
+    </div>
+  </div>
+</header>
           {/* Main content grid */}
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Vendedor Information */}

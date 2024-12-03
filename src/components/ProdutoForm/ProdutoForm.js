@@ -3,22 +3,29 @@ import React, { useState } from 'react';
 const ProdutoForm = ({ initialData, onSubmit, onCancel, onDelete, isLoading }) => {
   const [formData, setFormData] = useState({
     nome: initialData?.nome || '',
-    valorVendido: initialData?.valorVendido || 0,
-    valorBonificado: initialData?.valorBonificado || 0,
-    areas: initialData?.areas || 0,
+    valorVendido: initialData?.valorVendido || '',
+    valorBonificado: initialData?.valorBonificado || '',
+    areas: initialData?.areas || ''
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'nome' ? value : parseFloat(value) || 0
+      [name]: name === 'nome' ? value : value === '' ? '' : parseFloat(value)
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    // Converte strings vazias para 0 antes de enviar
+    const formattedData = {
+      nome: formData.nome,
+      valorVendido: formData.valorVendido === '' ? 0 : parseFloat(formData.valorVendido),
+      valorBonificado: formData.valorBonificado === '' ? 0 : parseFloat(formData.valorBonificado),
+      areas: formData.areas === '' ? 0 : parseFloat(formData.areas)
+    };
+    onSubmit(formattedData);
   };
 
   return (

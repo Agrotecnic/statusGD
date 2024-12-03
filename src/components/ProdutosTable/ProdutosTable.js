@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ProdutosTable = ({ produtos, onEdit, onAdd, formatMoney, disabled }) => {
+const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white">
@@ -10,7 +10,7 @@ const ProdutosTable = ({ produtos, onEdit, onAdd, formatMoney, disabled }) => {
             <th className="py-2 px-4 border-b">Valor Vendido</th>
             <th className="py-2 px-4 border-b">Valor Bonificado</th>
             <th className="py-2 px-4 border-b">Áreas</th>
-            <th className="py-2 px-4 border-b">Ações</th>
+            <th className="py-2 px-4 border-b no-print">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -20,7 +20,8 @@ const ProdutosTable = ({ produtos, onEdit, onAdd, formatMoney, disabled }) => {
               <td className="py-2 px-4 border-b">{formatMoney(produto.valorVendido)}</td>
               <td className="py-2 px-4 border-b">{formatMoney(produto.valorBonificado)}</td>
               <td className="py-2 px-4 border-b">{produto.areas}</td>
-              <td className="py-2 px-4 border-b">
+              <th className="py-2 px-4 border-b hide-on-print">Ações</th>
+              <td className="py-2 px-4 border-b hide-on-print">
                 <button
                   onClick={() => onEdit('produto', { index })}
                   className="text-blue-500 hover:text-blue-700 mr-2"
@@ -33,13 +34,6 @@ const ProdutosTable = ({ produtos, onEdit, onAdd, formatMoney, disabled }) => {
           ))}
         </tbody>
       </table>
-      <button
-        onClick={onAdd}
-        className="mt-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        disabled={disabled}
-      >
-        Adicionar Produto
-      </button>
     </div>
   );
 };

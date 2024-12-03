@@ -1,77 +1,49 @@
 @media print {
-  /* Oculta todos os elementos por padrão */
-  body * {
-    visibility: hidden;
-  }
-
-  /* Mostra apenas o dashboard e seus elementos */
-  #dashboard,
-  #dashboard * {
-    visibility: visible;
-  }
-
-  /* Oculta elementos específicos mesmo dentro do dashboard */
-  .no-print,
+  /* Esconde todos os botões e elementos de controle */
+  .hide-on-print,
   button,
-  [class*="button"],
-  input[type="file"],
-  .actions-column,
-  td:last-child,
-  th:last-child,
-  [class*="edit"],
-  [class*="Edit"],
-  [class*="export"],
-  [class*="Export"],
-  [class*="add"],
-  [class*="Add"],
-  [class*="remove"],
-  [class*="Remove"] {
-    display: none !important;
-    visibility: hidden !important;
-  }
-
-  /* Ajusta layout para impressão */
-  #dashboard {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    background: white !important;
-    padding: 20px !important;
-  }
-
-  /* Remove espaços reservados para botões */
-  .space-x-4,
-  .gap-4 > *:last-child {
+  .actions,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  .no-print {
     display: none !important;
   }
 
-  /* Ajusta a coluna de ações na tabela */
+  /* Esconde a última coluna da tabela (ações) */
   table th:last-child,
   table td:last-child {
     display: none !important;
   }
 
-  /* Ajusta margens e paddings */
-  * {
+  /* Ajusta o layout para impressão */
+  body {
+    margin: 0;
+    padding: 0;
+    background: white !important;
+  }
+
+  #dashboard {
     margin: 0 !important;
-    padding: 5px !important;
+    padding: 1cm !important;
   }
 
-  /* Garante que textos e números sejam visíveis */
-  .text-2xl,
-  .font-medium,
-  .font-semibold,
-  td,
-  th,
-  p {
-    visibility: visible !important;
-    color: black !important;
-  }
-
-  /* Remove backgrounds coloridos */
+  /* Força cores impressas */
   * {
     -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+}
+
+/* Classe utilitária para esconder elementos na impressão */
+@page {
+  margin: 0;
+  size: auto;
+}
+
+.hide-on-print {
+  @media print {
+    display: none !important;
   }
 }
