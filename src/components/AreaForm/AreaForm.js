@@ -4,7 +4,7 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
   const [formData, setFormData] = useState({
     emAcompanhamento: initialData.emAcompanhamento || 0,
     aImplantar: initialData.aImplantar || 0,
-    hectaresPorArea: initialData.hectaresPorArea || 0,
+    médiahectaresdasArea: initialData.médiahectaresdasArea || 0,
     areaPotencialTotal: initialData.areaPotencialTotal || 0  // Alterado para areaPotencialTotal
   });
 
@@ -61,12 +61,12 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Hectares por Área
+        Média hectares das Area
         </label>
         <input
           type="number"
-          name="hectaresPorArea"
-          value={formData.hectaresPorArea}
+          name="médiahectaresdasArea"
+          value={formData.médiahectaresdasArea}
           onChange={handleChange}
           min="0"
           step="0.1"

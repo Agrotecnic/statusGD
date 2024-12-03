@@ -67,7 +67,7 @@ function App() {
   const [areas, setAreas] = useState({
     emAcompanhamento: 0,
     aImplantar: 0,
-    hectaresPorArea: 0,
+    médiahectaresdasArea: 0,
     areaPotencialTotal: 0,
   });
   const [produtos, setProdutos] = useState([]);
@@ -101,7 +101,7 @@ function App() {
     const totalBonificado = produtos.reduce((acc, prod) => acc + (prod.valorBonificado || 0), 0);
     const totalGeral = totalVendido + totalBonificado;
     const totalAreas = produtos.reduce((acc, prod) => acc + (prod.areas || 0), 0);
-    const totalHectares = totalAreas * (areas.hectaresPorArea || 0);
+    const totalHectares = totalAreas * (areas.médiahectaresdasArea || 0);
 
     const valorMedioHectare = totalHectares ? totalGeral / totalHectares : 0;
     const potencialVendasTotal = (areas.areaPotencialTotal || 0) * valorMedioHectare;

@@ -371,7 +371,7 @@ export default function App() {
         </div>
         <div style={{ marginBottom: "16px" }}>
           <label style={{ display: "block", marginBottom: "8px" }}>
-            Hectares por Área
+             Média hectares das Area
             <ControlledInput
               type="number"
               value={formData.hectaresPorArea}

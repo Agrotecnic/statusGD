@@ -35,8 +35,8 @@ const AreasCard = ({ data, formatPercent = value => `${value?.toFixed(1) || 0}%`
           <p className="text-2xl">{data?.aImplantar || 0}</p>
         </div>
         <div>
-          <p className="font-medium">Hectares por Área</p>
-          <p className="text-2xl">{data?.hectaresPorArea || 0}</p>
+          <p className="font-medium">Média hectares das Area</p>
+          <p className="text-2xl">{data?.médiahectaresdasArea || 0}</p>
         </div>
         <div className="col-span-2">
           <p className="font-medium">Implantação</p>
