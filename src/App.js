@@ -5,6 +5,9 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+
+// Componentes
+import SignUp from './components/SignUp/SignUp';
 import Modal from './components/Modal/Modal';
 import ImageUploader from './components/ImageUploader/ImageUploader';
 import VendedorForm from './components/VendedorForm/VendedorForm';
@@ -39,17 +42,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getDatabase(app);
-
 function App() {
   // Authentication states
   const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
   
   // UI states
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [error, setError] = useState(null);
   const [editingSection, setEditingSection] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
   
@@ -69,45 +72,7 @@ function App() {
   });
   const [produtos, setProdutos] = useState([]);
 
-  // Calculated data
-  const calculatedData = useMemo(() => {
-    const totalVendido = produtos.reduce((acc, prod) => acc + prod.valorVendido, 0);
-    const totalBonificado = produtos.reduce((acc, prod) => acc + prod.valorBonificado, 0);
-    const totalGeral = totalVendido + totalBonificado;
-    const totalAreas = produtos.reduce((acc, prod) => acc + prod.areas, 0);
-    const totalHectares = totalAreas * areas.hectaresPorArea;
-  
-    const valorMedioHectare = totalHectares ? totalGeral / totalHectares : 0;
-    const potencialVendasTotal = areas.areaPotencialTotal * valorMedioHectare;
-  
-    return {
-      totalVendido,
-      totalBonificado,
-      totalGeral,
-      percentualVendido: totalGeral ? (totalVendido / totalGeral) * 100 : 0,
-      percentualBonificado: totalGeral ? (totalBonificado / totalGeral) * 100 : 0,
-      totalAreas,
-      totalHectares,
-      valorMedioHectare,
-      areaPotencialTotal: areas.areaPotencialTotal || 0,
-      potencialVendasTotal: potencialVendasTotal || 0,
-      percentualRealizacao: potencialVendasTotal ? (totalGeral / potencialVendasTotal) * 100 : 0,
-      percentualImplantacao: (areas.emAcompanhamento / (areas.emAcompanhamento + areas.aImplantar)) * 100
-    };
-  }, [produtos, areas]);
-
   // Utility functions
-  const formatMoney = useCallback((value) => {
-    return new Intl.NumberFormat("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    }).format(value);
-  }, []);
-
-  const formatPercent = useCallback((value) => {
-    return `${value.toFixed(1)}%`;
-  }, []);
-
   const showToast = useCallback((message, type = 'info') => {
     toast[type](message, {
       position: "top-right",
@@ -119,7 +84,48 @@ function App() {
     });
   }, []);
 
-  // Firebase data management
+  const formatMoney = useCallback((value) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(value);
+  }, []);
+
+  const formatPercent = useCallback((value) => {
+    return `${value?.toFixed(1) || 0}%`;
+  }, []);
+
+  // Calculated data using useMemo
+  const calculatedData = useMemo(() => {
+    const totalVendido = produtos.reduce((acc, prod) => acc + (prod.valorVendido || 0), 0);
+    const totalBonificado = produtos.reduce((acc, prod) => acc + (prod.valorBonificado || 0), 0);
+    const totalGeral = totalVendido + totalBonificado;
+    const totalAreas = produtos.reduce((acc, prod) => acc + (prod.areas || 0), 0);
+    const totalHectares = totalAreas * (areas.hectaresPorArea || 0);
+
+    const valorMedioHectare = totalHectares ? totalGeral / totalHectares : 0;
+    const potencialVendasTotal = (areas.areaPotencialTotal || 0) * valorMedioHectare;
+    
+    const percentualImplantacao = areas.emAcompanhamento && areas.aImplantar
+      ? (areas.emAcompanhamento / (areas.emAcompanhamento + areas.aImplantar)) * 100
+      : 0;
+
+    return {
+      totalVendido,
+      totalBonificado,
+      totalGeral,
+      percentualVendido: totalGeral ? (totalVendido / totalGeral) * 100 : 0,
+      percentualBonificado: totalGeral ? (totalBonificado / totalGeral) * 100 : 0,
+      totalAreas,
+      totalHectares,
+      valorMedioHectare,
+      areaPotencialTotal: areas.areaPotencialTotal || 0,
+      potencialVendasTotal,
+      percentualRealizacao: potencialVendasTotal ? (totalGeral / potencialVendasTotal) * 100 : 0,
+      percentualImplantacao
+    };
+  }, [produtos, areas]);
+// Fetch user data function
   const fetchUserData = useCallback(async (uid) => {
     try {
       setLoading(true);
@@ -135,7 +141,7 @@ function App() {
         showToast('Dados carregados com sucesso', 'success');
       }
     } catch (error) {
-      setError(error.message);
+      setError('Erro ao carregar dados do usuário');
       showToast('Erro ao carregar dados', 'error');
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -143,6 +149,43 @@ function App() {
     }
   }, [showToast]);
 
+  // Authentication functions
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+    
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      showToast('Login realizado com sucesso', 'success');
+    } catch (error) {
+      const errorMessage = 
+        error.code === 'auth/wrong-password' ? 'Senha incorreta' :
+        error.code === 'auth/user-not-found' ? 'Usuário não encontrado' :
+        error.code === 'auth/invalid-email' ? 'Email inválido' :
+        'Erro ao fazer login';
+      
+      setError(errorMessage);
+      showToast(errorMessage, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      setLoading(true);
+      await signOut(auth);
+      showToast('Logout realizado com sucesso', 'success');
+    } catch (error) {
+      showToast('Erro ao fazer logout', 'error');
+      console.error('Erro no logout:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Data management functions
   const saveData = useCallback(async () => {
     if (!user) return;
     
@@ -160,12 +203,12 @@ function App() {
       setError(error.message);
       showToast('Erro ao salvar dados', 'error');
       console.error('Erro ao salvar:', error);
-   } finally {
+    } finally {
       setLoading(false);
     }
   }, [user, vendedorInfo, areas, produtos, images, showToast]);
 
-  // Authentication effects
+  // Effects
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -218,8 +261,7 @@ function App() {
       showToast('Erro ao atualizar áreas', 'error');
     }
   }, [saveData, showToast]);
-
-  const handleProdutoUpdate = useCallback(async (data, index) => {
+const handleProdutoUpdate = useCallback(async (data, index) => {
     try {
       const newProdutos = [...produtos];
       newProdutos[index] = data;
@@ -255,12 +297,12 @@ function App() {
     showToast('Novo produto adicionado', 'info');
   }, [produtos.length, showToast]);
 
-  const handleImageUpload = useCallback(async (area) => {
-    return async (imageData) => {
+  const handleImageUpload = useCallback((area) => {
+    return (imageData) => {
       try {
         setLoading(true);
         setImages(prev => ({ ...prev, [area]: imageData }));
-        await saveData();
+        saveData();
         showToast('Imagem atualizada com sucesso', 'success');
       } catch (error) {
         showToast('Erro ao fazer upload da imagem', 'error');
@@ -278,21 +320,30 @@ function App() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Produtos');
     
+      // Add headers with formatting
       worksheet.addRow(['Produto', 'Valor Vendido', 'Valor Bonificado', 'Áreas', 'Total']);
-    
+      worksheet.getRow(1).font = { bold: true };
+      
+      // Add data rows
       produtos.forEach(produto => {
         worksheet.addRow([
           produto.nome,
-          produto.valorVendido,
-          produto.valorBonificado,
-          produto.areas,
-          produto.valorVendido + produto.valorBonificado
+          produto.valorVendido || 0,
+          produto.valorBonificado || 0,
+          produto.areas || 0,
+          (produto.valorVendido || 0) + (produto.valorBonificado || 0)
         ]);
       });
     
+      // Format currency columns
       worksheet.getColumn(2).numFmt = '"R$"#,##0.00';
       worksheet.getColumn(3).numFmt = '"R$"#,##0.00';
       worksheet.getColumn(5).numFmt = '"R$"#,##0.00';
+    
+      // Auto-adjust column widths
+      worksheet.columns.forEach(column => {
+        column.width = Math.max(12, ...worksheet.getColumn(column.number).values.map(v => String(v).length));
+      });
     
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { 
@@ -313,6 +364,7 @@ function App() {
       setIsExporting(true);
       setLoading(true);
       
+      // Wait for any state updates
       await new Promise(resolve => setTimeout(resolve, 100));
       
       const input = document.getElementById('dashboard');
@@ -354,84 +406,61 @@ function App() {
       setLoading(false);
     }
   }, [vendedorInfo.nome, showToast]);
-
-  // Authentication handlers
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-    
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      showToast('Login realizado com sucesso', 'success');
-    } catch (error) {
-      const errorMessage = 
-        error.code === 'auth/wrong-password' ? 'Senha incorreta' :
-        error.code === 'auth/user-not-found' ? 'Usuário não encontrado' :
-        error.code === 'auth/invalid-email' ? 'Email inválido' :
-        'Erro ao fazer login';
-      
-      setError(errorMessage);
-      showToast(errorMessage, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      setLoading(true);
-      await signOut(auth);
-      showToast('Logout realizado com sucesso', 'success');
-    } catch (error) {
-      showToast('Erro ao fazer logout', 'error');
-      console.error('Erro no logout:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Main render function
+// Render login/signup or main content
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
-        <form onSubmit={handleLogin} className="p-8 bg-white rounded-lg shadow-md w-96">
-          <h2 className="mb-6 text-2xl font-bold text-center">Login</h2>
-          {error && (
-            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
-              {error}
+        {isSignUp ? (
+          <SignUp onToggleForm={() => setIsSignUp(false)} />
+        ) : (
+          <form onSubmit={handleLogin} className="p-8 bg-white rounded-lg shadow-md w-96">
+            <h2 className="mb-6 text-2xl font-bold text-center">Login</h2>
+            {error && (
+              <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded text-sm">
+                {error}
+              </div>
+            )}
+            <div className="space-y-4">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email"
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                disabled={loading}
+                required
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Senha"
+                className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                disabled={loading}
+                required
+              />
+              <button
+                type="submit"
+                className="w-full p-2 text-white bg-blue-500 rounded hover:bg-blue-600 disabled:opacity-50"
+                disabled={loading}
+              >
+                {loading ? 'Entrando...' : 'Entrar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSignUp(true)}
+                className="w-full p-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+              >
+                Criar nova conta
+              </button>
             </div>
-          )}
-          <div className="space-y-4">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-              disabled={loading}
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Senha"
-              className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-              disabled={loading}
-            />
-            <button
-              type="submit"
-              className="w-full p-2 text-white bg-blue-500 rounded hover:bg-blue-600 disabled:opacity-50"
-              disabled={loading}
-            >
-              {loading ? 'Entrando...' : 'Entrar'}
-            </button>
-          </div>
-        </form>
+          </form>
+        )}
       </div>
     );
   }
 
+  // Main dashboard render
   return (
     <ErrorBoundary>
       <div className={`min-h-screen bg-gray-100 p-4 ${isExporting ? 'exporting' : ''}`}>
@@ -448,47 +477,33 @@ function App() {
                   Última atualização: {vendedorInfo.dataAtualizacao}
                 </p>
               </div>
-              {/* Botões de exportação */}
-              <div>
-                <div className="space-x-4 no-print">
-                  <button
-                    onClick={exportToExcel}
-                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 no-print"
-                  >
-                    Exportar Excel
-                  </button>
-                  <button
-                    onClick={exportToPDF}
-                    className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 no-print"
-                  >
-                    Exportar PDF
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 no-print"
-                  >
-                    Sair
-                  </button>
-                </div>
-                {/* Botão de adicionar produto */}
+              <div className="space-x-4 no-print">
                 <button
-                  onClick={addProduto}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 no-print"
+                  onClick={exportToExcel}
+                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+                  disabled={loading || isExporting}
                 >
-                  Adicionar Produto
+                  Exportar Excel
                 </button>
-                {/* Botões de troca de imagem */}
                 <button
-                  className="text-blue-500 hover:text-blue-600 no-print"
-                  onClick={() => handleEditStart('area')}
+                  onClick={exportToPDF}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+                  disabled={loading || isExporting}
                 >
-                  Trocar Imagem
+                  Exportar PDF
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
+                  disabled={loading}
+                >
+                  Sair
                 </button>
               </div>
             </div>
           </header>
-  
-          {/* Main content */}
+
+          {/* Main content grid */}
           <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Vendedor Information */}
             <div className="border rounded-lg p-4">
@@ -508,51 +523,63 @@ function App() {
                 <p><strong>Business Unit:</strong> {vendedorInfo.businessUnit}</p>
               </div>
             </div>
-  
+
             {/* Areas Card */}
-            <AreasCard
+            <AreasCard 
               data={areas}
               formatPercent={formatPercent}
               onEdit={() => handleEditStart('areas')}
             />
-  
+
             {/* Images Upload */}
             <div className="border rounded-lg p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Imagens</h2>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <ImageUploader
-                  initialImage={images.area1}
-                  onUpload={handleImageUpload('area1')}
-                  label="Área 1"
-                  disabled={loading}
-                />
-                <ImageUploader
-                  initialImage={images.area2}
-                  onUpload={handleImageUpload('area2')}
-                  label="Área 2"
-                  disabled={loading}
-                />
-              </div>
-            </div>
-  
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="text-xl font-semibold">Imagens</h2>
+  </div>
+  <div className="grid grid-cols-2 gap-4">
+    <ImageUploader
+      initialImage={images.area1}
+      onUpload={handleImageUpload('area1')}
+      label="Área 1"
+      disabled={loading}
+    />
+    <ImageUploader
+      initialImage={images.area2}
+      onUpload={handleImageUpload('area2')}
+      label="Área 2"
+      disabled={loading}
+    />
+  </div>
+</div>
             {/* Metrics */}
-            <MetricasCard data={calculatedData} formatMoney={formatMoney} formatPercent={formatPercent} />
-          </div>
-  
-          {/* Products Table */}
-          <div className="p-6">
-            <ProdutosTable
-              produtos={produtos}
-              onEdit={handleEditStart}
-              onAdd={addProduto}
+            <MetricasCard 
+              data={calculatedData}
               formatMoney={formatMoney}
-              disabled={loading}
+              formatPercent={formatPercent}
             />
           </div>
+
+          {/* Products Section */}
+<div className="p-6">
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="text-xl font-semibold">Produtos</h2>
+    <button
+      onClick={addProduto}
+      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 no-print"
+      disabled={loading}
+    >
+      Adicionar Produto
+    </button>
+  </div>
+  <ProdutosTable
+    produtos={produtos}
+    onEdit={handleEditStart}
+    formatMoney={formatMoney}
+    disabled={loading}
+  />
+</div>
         </div>
-  
+
         {/* Modals */}
         {editingSection === 'vendedor' && (
           <Modal onClose={handleEditCancel}>
@@ -564,6 +591,7 @@ function App() {
             />
           </Modal>
         )}
+
         {editingSection === 'areas' && (
           <Modal onClose={handleEditCancel}>
             <AreaForm
@@ -574,6 +602,7 @@ function App() {
             />
           </Modal>
         )}
+
         {editingItem !== null && (
           <Modal onClose={handleEditCancel}>
             <ProdutoForm
@@ -585,8 +614,8 @@ function App() {
             />
           </Modal>
         )}
-  
-        {/* Global loading spinner */}
+
+        {/* Loading spinner */}
         {loading && <LoadingSpinner />}
         
         {/* Toast notifications */}

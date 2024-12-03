@@ -17,30 +17,16 @@ const ImageUploader = ({ initialImage, onUpload, label, disabled }) => {
     reader.readAsDataURL(file);
   };
 
-  // Função para truncar nome do arquivo
-  const truncateFileName = (fileName, maxLength = 15) => {
-    if (!fileName) return '';
-    if (fileName.length <= maxLength) return fileName;
-    const ext = fileName.split('.').pop();
-    const name = fileName.split('.').slice(0, -1).join('.');
-    return `${name.substring(0, maxLength)}...${ext}`;
-  };
-
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col items-center">
       <label className="mb-2 font-medium">{label}</label>
       <div className="relative w-full aspect-video bg-gray-100 rounded-lg overflow-hidden">
         {preview ? (
-          <>
-            <img
-              src={preview}
-              alt={label}
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white p-2 text-sm truncate">
-              {truncateFileName(preview.split('/').pop())}
-            </div>
-          </>
+          <img
+            src={preview}
+            alt={label}
+            className="w-full h-full object-cover"
+          />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-gray-400">
             Sem imagem
@@ -48,19 +34,20 @@ const ImageUploader = ({ initialImage, onUpload, label, disabled }) => {
         )}
       </div>
       <input
-  type="file"
-  accept="image/*"
-  onChange={handleFileChange}
-  ref={fileInputRef}
-  className="hidden no-print"
-  disabled={disabled}
-/>
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        ref={fileInputRef}
+        className="hidden"
+        disabled={disabled}
+      />
       <button
-  onClick={() => fileInputRef.current.click()}
-  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 no-print"
->
-  {preview ? 'Trocar Imagem' : 'Adicionar Imagem'}
-</button>
+        onClick={() => fileInputRef.current.click()}
+        className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+        disabled={disabled}
+      >
+        {preview ? 'Trocar Imagem' : 'Adicionar Imagem'}
+      </button>
     </div>
   );
 };
