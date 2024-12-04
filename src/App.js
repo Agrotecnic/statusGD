@@ -22,9 +22,9 @@ import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import './styles/print.css';
 
 // Firebase imports
+import { initializeApp } from "firebase/app";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getDatabase, ref, get, set } from 'firebase/database';
-import { initializeApp } from "firebase/app";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -32,7 +32,7 @@ const firebaseConfig = {
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN || "status-gd.firebaseapp.com",
   databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL || "https://status-gd-default-rtdb.firebaseio.com",
   projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID || "status-gd",
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "status-gd.firebasestorage.app",
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET || "status-gd.appspot.com",
   messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID || "956818896523",
   appId: process.env.REACT_APP_FIREBASE_APP_ID || "1:956818896523:web:81509b052009fddb22468e",
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID || "G-ZS16WZWMPG"
@@ -58,7 +58,12 @@ function App() {
   const [editingItem, setEditingItem] = useState(null);
   
   // Data states
-  const [images, setImages] = useState({ area1: null, area2: null });
+  const [images, setImages] = useState({
+    area1: null,
+    area2: null,
+    area3: null,
+    area4: null
+  });
   const [vendedorInfo, setVendedorInfo] = useState({
     nome: "",
     regional: "",
@@ -540,25 +545,37 @@ function App() {
               onEdit={() => handleEditStart('areas')}
             />
 
-            <div className="border rounded-lg p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Imagens</h2>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <ImageUploader
-                  initialImage={images.area1}
-                  onUpload={handleImageUpload('area1')}
-                  label="Área 1"
-                  disabled={loading}
-                />
-                <ImageUploader
-                  initialImage={images.area2}
-                  onUpload={handleImageUpload('area2')}
-                  label="Área 2"
-                  disabled={loading}
-                />
-              </div>
-            </div>
+<div className="border rounded-lg p-4">
+  <div className="flex justify-between items-center mb-4">
+    <h2 className="text-xl font-semibold">Imagens</h2>
+  </div>
+  <div className="grid grid-cols-2 gap-4">
+    <ImageUploader
+      initialImage={images.area1}
+      onUpload={handleImageUpload('area1')}
+      label="Área 1"
+      disabled={loading}
+    />
+    <ImageUploader
+      initialImage={images.area2}
+      onUpload={handleImageUpload('area2')}
+      label="Área 2"
+      disabled={loading}
+    />
+    <ImageUploader
+      initialImage={images.area3}
+      onUpload={handleImageUpload('area3')}
+      label="Área 3"
+      disabled={loading}
+    />
+    <ImageUploader
+      initialImage={images.area4}
+      onUpload={handleImageUpload('area4')}
+      label="Área 4"
+      disabled={loading}
+    />
+  </div>
+</div>
 
             <MetricasCard 
               data={calculatedData}
