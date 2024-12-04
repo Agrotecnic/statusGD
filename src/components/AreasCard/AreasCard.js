@@ -40,7 +40,7 @@ const AreasCard = ({ data, onEdit }) => {
         </div>
         <div>
           <p className="font-medium">Média Hectare das Áreas</p>
-          <p className="text-2xl">{data?.hectaresPorArea?.toFixed(2) || '-'}</p>
+          <p className="text-2xl">{data?.mediaHectaresArea?.toFixed(2) || '-'} ha</p>
         </div>
         <div className="col-span-2">
           <p className="font-medium">Implantação</p>

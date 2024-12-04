@@ -1,111 +1,87 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
-const ProdutoForm = ({ initialData, onSubmit, onCancel, onDelete, isLoading }) => {
+const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading }) => {
   const [formData, setFormData] = useState({
-    nome: initialData?.nome || '',
-    valorVendido: initialData?.valorVendido || '',
-    valorBonificado: initialData?.valorBonificado || '',
-    areas: initialData?.areas || ''
+    nome: initialData.nome || '',
+    valorVendido: initialData.valorVendido || 0,
+    valorBonificado: initialData.valorBonificado || 0,
+    areas: initialData.areas || 0
   });
+
+  const [errors, setErrors] = useState({});
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    let processedValue;
+
+    if (name === 'nome') {
+      processedValue = value;
+    } else {
+      processedValue = value === '' ? 0 : parseFloat(value);
+      if (isNaN(processedValue)) {
+        processedValue = 0;
+      }
+    }
+
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'nome' ? value : value === '' ? '' : parseFloat(value)
+      [name]: processedValue
     }));
+
+    // Limpar erro do campo quando ele for editado
+    setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.nome.trim()) newErrors.nome = 'O nome do produto é obrigatório.';
+    if (formData.valorVendido < 0) newErrors.valorVendido = 'O valor não pode ser negativo.';
+    if (formData.valorBonificado < 0) newErrors.valorBonificado = 'O valor não pode ser negativo.';
+    if (formData.areas < 0) newErrors.areas = 'O número de áreas não pode ser negativo.';
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Converte strings vazias para 0 antes de enviar
-    const formattedData = {
-      nome: formData.nome,
-      valorVendido: formData.valorVendido === '' ? 0 : parseFloat(formData.valorVendido),
-      valorBonificado: formData.valorBonificado === '' ? 0 : parseFloat(formData.valorBonificado),
-      areas: formData.areas === '' ? 0 : parseFloat(formData.areas)
-    };
-    onSubmit(formattedData);
+    if (validateForm()) {
+      onSubmit(formData);
+    }
   };
+
+  const renderField = (name, label, type = 'text', min = null) => (
+    <div>
+      <label htmlFor={name} className="block text-sm font-medium text-gray-700">{label}</label>
+      <input
+        type={type}
+        id={name}
+        name={name}
+        value={formData[name]}
+        onChange={handleChange}
+        className={`mt-1 block w-full border rounded-md shadow-sm p-2 ${errors[name] ? 'border-red-500' : 'border-gray-300'}`}
+        min={min}
+        aria-invalid={errors[name] ? 'true' : 'false'}
+        aria-describedby={`${name}-error`}
+      />
+      {errors[name] && <p id={`${name}-error`} className="mt-1 text-sm text-red-600">{errors[name]}</p>}
+    </div>
+  );
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-xl font-semibold mb-4">
-        {initialData ? 'Editar Produto' : 'Novo Produto'}
-      </h2>
-      
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Nome do Produto
-        </label>
-        <input
-          type="text"
-          name="nome"
-          value={formData.nome}
-          onChange={handleChange}
-          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          disabled={isLoading}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Valor Vendido
-        </label>
-        <input
-          type="number"
-          name="valorVendido"
-          value={formData.valorVendido}
-          onChange={handleChange}
-          min="0"
-          step="0.01"
-          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          disabled={isLoading}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Valor Bonificado
-        </label>
-        <input
-          type="number"
-          name="valorBonificado"
-          value={formData.valorBonificado}
-          onChange={handleChange}
-          min="0"
-          step="0.01"
-          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          disabled={isLoading}
-          required
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Áreas
-        </label>
-        <input
-          type="number"
-          name="areas"
-          value={formData.areas}
-          onChange={handleChange}
-          min="0"
-          step="1"
-          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          disabled={isLoading}
-          required
-        />
-      </div>
+      {renderField('nome', 'Nome do Produto')}
+      {renderField('valorVendido', 'Valor Vendido', 'number', 0)}
+      {renderField('valorBonificado', 'Valor Bonificado', 'number', 0)}
+      {renderField('areas', 'Áreas', 'number', 0)}
 
       <div className="flex justify-end space-x-2 pt-4">
         {onDelete && (
           <button
             type="button"
             onClick={onDelete}
-            className="px-4 py-2 text-white bg-red-500 rounded hover:bg-red-600 disabled:opacity-50"
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
             disabled={isLoading}
           >
             Excluir
@@ -114,7 +90,7 @@ const ProdutoForm = ({ initialData, onSubmit, onCancel, onDelete, isLoading }) =
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+          className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           disabled={isLoading}
         >
           Cancelar
@@ -129,6 +105,24 @@ const ProdutoForm = ({ initialData, onSubmit, onCancel, onDelete, isLoading }) =
       </div>
     </form>
   );
+};
+
+ProdutoForm.propTypes = {
+  initialData: PropTypes.shape({
+    nome: PropTypes.string,
+    valorVendido: PropTypes.number,
+    valorBonificado: PropTypes.number,
+    areas: PropTypes.number
+  }),
+  onSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onDelete: PropTypes.func,
+  isLoading: PropTypes.bool
+};
+
+ProdutoForm.defaultProps = {
+  initialData: {},
+  isLoading: false
 };
 
 export default ProdutoForm;

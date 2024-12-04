@@ -10,7 +10,6 @@ const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
             <th className="py-2 px-4 border-b">Valor Vendido</th>
             <th className="py-2 px-4 border-b">Valor Bonificado</th>
             <th className="py-2 px-4 border-b">Áreas</th>
-            <th className="py-2 px-4 border-b no-print">Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -20,7 +19,6 @@ const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
               <td className="py-2 px-4 border-b">{formatMoney(produto.valorVendido)}</td>
               <td className="py-2 px-4 border-b">{formatMoney(produto.valorBonificado)}</td>
               <td className="py-2 px-4 border-b">{produto.areas}</td>
-              <th className="py-2 px-4 border-b hide-on-print">Ações</th>
               <td className="py-2 px-4 border-b hide-on-print">
                 <button
                   onClick={() => onEdit('produto', { index })}

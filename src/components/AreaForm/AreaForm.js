@@ -1,88 +1,79 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 
 const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
   const [formData, setFormData] = useState({
-    emAcompanhamento: initialData.emAcompanhamento || '',
-    aImplantar: initialData.aImplantar || '',
-    hectaresPorArea: initialData.hectaresPorArea || '',
-    areaPotencialTotal: initialData.areaPotencialTotal || ''
+    emAcompanhamento: Number(initialData.emAcompanhamento) || 0,
+    aImplantar: Number(initialData.aImplantar) || 0,
+    mediaHectaresArea: Number(initialData.mediaHectaresArea) || 0,
+    areaPotencialTotal: Number(initialData.areaPotencialTotal) || 0
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    const numericValue = value === '' ? 0 : Number(value);
+    console.log(`Atualizando ${name}:`, numericValue);
     setFormData(prev => ({
       ...prev,
-      [name]: value === '' ? '' : parseFloat(value)
+      [name]: numericValue
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Converte strings vazias para 0 antes de enviar
-    const formattedData = Object.keys(formData).reduce((acc, key) => {
-      acc[key] = formData[key] === '' ? 0 : parseFloat(formData[key]);
-      return acc;
-    }, {});
-    onSubmit(formattedData);
+    console.log('Submetendo dados:', formData);
+    onSubmit(formData);
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <h2 className="text-xl font-semibold mb-4">Editar Áreas</h2>
-      
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Em Acompanhamento
+        <label className="block text-sm font-medium text-gray-700">
+          Áreas em Acompanhamento
         </label>
         <input
           type="number"
           name="emAcompanhamento"
           value={formData.emAcompanhamento}
           onChange={handleChange}
+          className="mt-1 block w-full border rounded-md shadow-sm p-2"
           min="0"
-          step="1"
-          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          disabled={isLoading}
-          required
+          step="0.01"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          A Implantar
+        <label className="block text-sm font-medium text-gray-700">
+          Áreas a Implantar
         </label>
         <input
           type="number"
           name="aImplantar"
           value={formData.aImplantar}
           onChange={handleChange}
+          className="mt-1 block w-full border rounded-md shadow-sm p-2"
           min="0"
-          step="1"
-          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          disabled={isLoading}
-          required
+          step="0.01"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Hectares por Área
+        <label className="block text-sm font-medium text-gray-700">
+          Média Hectare das Áreas
         </label>
         <input
           type="number"
-          name="hectaresPorArea"
-          value={formData.hectaresPorArea}
+          name="mediaHectaresArea"
+          value={formData.mediaHectaresArea}
           onChange={handleChange}
+          className="mt-1 block w-full border rounded-md shadow-sm p-2"
           min="0"
-          step="0.1"
-          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          disabled={isLoading}
-          required
+          step="0.01"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700">
           Área Potencial Total
         </label>
         <input
@@ -90,11 +81,9 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
           name="areaPotencialTotal"
           value={formData.areaPotencialTotal}
           onChange={handleChange}
+          className="mt-1 block w-full border rounded-md shadow-sm p-2"
           min="0"
-          step="0.1"
-          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-          disabled={isLoading}
-          required
+          step="0.01"
         />
       </div>
 
@@ -102,7 +91,7 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+          className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
           disabled={isLoading}
         >
           Cancelar
@@ -117,6 +106,18 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
       </div>
     </form>
   );
+};
+
+AreaForm.propTypes = {
+  initialData: PropTypes.shape({
+    emAcompanhamento: PropTypes.number,
+    aImplantar: PropTypes.number,
+    mediaHectaresArea: PropTypes.number,
+    areaPotencialTotal: PropTypes.number
+  }).isRequired,
+  onSubmit: PropTypes.func.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool
 };
 
 export default AreaForm;

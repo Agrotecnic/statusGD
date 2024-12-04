@@ -18,9 +18,9 @@ const ImageUploader = ({ initialImage, onUpload, label, disabled }) => {
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center w-full">
       <label className="mb-2 font-medium">{label}</label>
-      <div className="relative w-full aspect-video bg-gray-100 rounded-lg overflow-hidden">
+      <div className="relative w-full h-48 bg-gray-100 rounded-lg overflow-hidden">
         {preview ? (
           <img
             src={preview}
