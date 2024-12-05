@@ -252,13 +252,33 @@ function App() {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       const input = document.getElementById('dashboard');
+      
       const canvas = await html2canvas(input, {
         scale: 2,
         useCORS: true,
         allowTaint: true,
         scrollY: -window.scrollY,
         windowWidth: document.documentElement.offsetWidth,
-        windowHeight: document.documentElement.offsetHeight
+        windowHeight: document.documentElement.offsetHeight,
+        onclone: (clonedDoc) => {
+          // Remove elementos de controle no clone do documento
+          const elementsToHide = clonedDoc.getElementsByClassName('hide-on-print');
+          Array.from(elementsToHide).forEach(element => {
+            element.style.display = 'none';
+          });
+          
+          // Esconde todos os botões
+          const buttons = clonedDoc.getElementsByTagName('button');
+          Array.from(buttons).forEach(button => {
+            button.style.display = 'none';
+          });
+          
+          // Esconde última coluna da tabela (ações)
+          const tableCells = clonedDoc.querySelectorAll('table th:last-child, table td:last-child');
+          Array.from(tableCells).forEach(cell => {
+            cell.style.display = 'none';
+          });
+        }
       });
       
       const imgData = canvas.toDataURL('image/png');
@@ -267,7 +287,7 @@ function App() {
         unit: 'mm',
         format: 'a4'
       });
-    
+  
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = canvas.width;
@@ -492,168 +512,181 @@ function App() {
     if (!bu) return '';
     return bu === '4' ? 'BU4' : `BU${bu}`;
   };
-  return (
-    <ErrorBoundary>
-      <div className={`min-h-screen bg-gray-100 p-4 ${isExporting ? 'exporting' : ''}`}>
-        <div id="dashboard" className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
-          <header className="p-6 border-b">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold">{vendedorInfo.nome || 'Dashboard'}</h1>
-                <p className="text-gray-600">
-                {vendedorInfo.regional} - {formatBU(vendedorInfo.businessUnit)}
-                </p>
-                <p className="text-sm text-gray-500">
-                  Última atualização: {vendedorInfo.dataAtualizacao}
-                </p>
-              </div>
-              <div className="space-x-4 hide-on-print">
-                <button
-                  onClick={exportToExcel}
-                  className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 hide-on-print"
-                  disabled={loading || isExporting}
-                >
-                  Exportar Excel
-                </button>
-                <button
-                  onClick={exportToPDF}
-                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 hide-on-print"
-                  disabled={loading || isExporting}
-                >
-                  Exportar PDF
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hide-on-print"
-                  disabled={loading}
-                >
-                  Sair
-                </button>
-              </div>
-            </div>
-          </header>
-
-          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="border rounded-lg p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Informações do Vendedor</h2>
-                <button
-                  onClick={() => handleEditStart('vendedor')}
-                  className="text-blue-500 hover:text-blue-600 no-print"
-                  disabled={loading}
-                >
-                  Editar
-                </button>
-              </div>
-              <div className="space-y-2">
-                <p><strong>Nome:</strong> {vendedorInfo.nome}</p>
-                <p><strong>Regional:</strong> {vendedorInfo.regional}</p>
-                <p><strong>BU:</strong> {vendedorInfo.businessUnit}</p>
-              </div>
-            </div>
-
-            <AreasCard 
-              data={areas}
-              formatPercent={formatPercent}
-              onEdit={() => handleEditStart('areas')}
-            />
-
-<div className="border rounded-lg p-4">
-  <div className="flex justify-between items-center mb-4">
-    <h2 className="text-xl font-semibold">Imagens</h2>
+  // Retorno principal da aplicação
+return (
+  <ErrorBoundary>
+    <div className={`min-h-screen bg-gray-100 p-4 ${isExporting ? 'exporting' : ''}`}>
+      <div id="dashboard" className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
+        {/* Header */}
+        <header className="p-6 border-b">
+  <div className="flex justify-between items-center">
+    <div>
+      <h1 className="text-2xl font-bold">{vendedorInfo.nome || 'Dashboard'}</h1>
+      <p className="text-gray-600">
+        {vendedorInfo.regional} - {formatBU(vendedorInfo.businessUnit)}
+      </p>
+      <p className="text-sm text-gray-500">
+        Última atualização: {vendedorInfo.dataAtualizacao}
+      </p>
+    </div>
+    <div className="space-x-4 hide-on-print">
+      {!isExporting && (
+        <div className="space-x-4">
+          <button
+            onClick={exportToExcel}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            disabled={loading || isExporting}
+          >
+            Exportar Excel
+          </button>
+          <button
+            onClick={exportToPDF}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 hide-on-print"
+            disabled={loading || isExporting}
+          >
+            Exportar PDF
+          </button>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 hide-on-print"
+            disabled={loading}
+          >
+            Sair
+          </button>
+        </div>
+      )}
+    </div>
   </div>
-  <div className="grid grid-cols-2 gap-4">
-    <ImageUploader
-      initialImage={images.area1}
-      onUpload={handleImageUpload('area1')}
-      label="Área 1"
-      disabled={loading}
-    />
-    <ImageUploader
-      initialImage={images.area2}
-      onUpload={handleImageUpload('area2')}
-      label="Área 2"
-      disabled={loading}
-    />
-    <ImageUploader
-      initialImage={images.area3}
-      onUpload={handleImageUpload('area3')}
-      label="Área 3"
-      disabled={loading}
-    />
-    <ImageUploader
-      initialImage={images.area4}
-      onUpload={handleImageUpload('area4')}
-      label="Área 4"
-      disabled={loading}
-    />
-  </div>
-</div>
+</header>
 
-            <MetricasCard 
-              data={calculatedData}
-              formatMoney={formatMoney}
-              formatPercent={formatPercent}
-            />
-          </div>
-
-          <div className="p-6">
+        {/* Content Grid */}
+        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Informações do Vendedor */}
+          <div className="border rounded-lg p-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Produtos</h2>
+              <h2 className="text-xl font-semibold">Informações do Vendedor</h2>
               <button
-                onClick={addProduto}
-                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 no-print"
+                onClick={() => handleEditStart('vendedor')}
+                className="text-blue-500 hover:text-blue-600 hide-on-print"
                 disabled={loading}
               >
-                Adicionar Produto
+                Editar
               </button>
             </div>
-            <ProdutosTable
-              produtos={produtos}
-              onEdit={handleEditStart}
-              formatMoney={formatMoney}
-              disabled={loading}
-            />
+            <div className="space-y-2">
+              <p><strong>Nome:</strong> {vendedorInfo.nome}</p>
+              <p><strong>Regional:</strong> {vendedorInfo.regional}</p>
+              <p><strong>BU:</strong> {vendedorInfo.businessUnit}</p>
+            </div>
           </div>
+
+          {/* Areas Card */}
+          <AreasCard 
+            data={areas}
+            formatPercent={formatPercent}
+            onEdit={() => handleEditStart('areas')}
+          />
+
+          {/* Images */}
+          <div className="border rounded-lg p-4">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold">Imagens</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <ImageUploader
+                initialImage={images.area1}
+                onUpload={handleImageUpload('area1')}
+                label="Área 1"
+                disabled={loading}
+              />
+              <ImageUploader
+                initialImage={images.area2}
+                onUpload={handleImageUpload('area2')}
+                label="Área 2"
+                disabled={loading}
+              />
+              <ImageUploader
+                initialImage={images.area3}
+                onUpload={handleImageUpload('area3')}
+                label="Área 3"
+                disabled={loading}
+              />
+              <ImageUploader
+                initialImage={images.area4}
+                onUpload={handleImageUpload('area4')}
+                label="Área 4"
+                disabled={loading}
+              />
+            </div>
+          </div>
+
+          {/* Metrics Card */}
+          <MetricasCard 
+            data={calculatedData}
+            formatMoney={formatMoney}
+            formatPercent={formatPercent}
+          />
         </div>
 
-        {editingSection === 'vendedor' && (
-          <Modal onClose={handleEditCancel}>
-            <VendedorForm
-              initialData={vendedorInfo}
-              onSubmit={handleVendedorUpdate}
-              onCancel={handleEditCancel}
-              isLoading={loading}
-            />
-          </Modal>
-        )}
-
-        {editingSection === 'areas' && (
-          <Modal onClose={handleEditCancel}>
-            <AreaForm
-              initialData={areas}
-              onSubmit={handleAreasUpdate}
-              onCancel={handleEditCancel}
-              isLoading={loading}
-            />
-          </Modal>
-        )}
-
-        {editingItem !== null && (
-          <Modal onClose={handleEditCancel}>
-            <ProdutoForm
-              initialData={produtos[editingItem]}
-              onSubmit={(data) => handleProdutoUpdate(data, editingItem)}
-              onCancel={handleEditCancel}
-              onDelete={() => handleProdutoRemove(editingItem)}
-              isLoading={loading}
-            />
-          </Modal>
-        )}
-
-        {loading && <LoadingSpinner />}
-        <ToastContainer />
+        {/* Products Section */}
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Produtos</h2>
+            <button
+              onClick={addProduto}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 hide-on-print"
+              disabled={loading}
+            >
+              Adicionar Produto
+            </button>
+          </div>
+          <ProdutosTable
+            produtos={produtos}
+            onEdit={handleEditStart}
+            formatMoney={formatMoney}
+            disabled={loading}
+          />
+        </div>
       </div>
+
+      {/* Modals */}
+      {editingSection === 'vendedor' && (
+        <Modal onClose={handleEditCancel}>
+          <VendedorForm
+            initialData={vendedorInfo}
+            onSubmit={handleVendedorUpdate}
+            onCancel={handleEditCancel}
+            isLoading={loading}
+          />
+        </Modal>
+      )}
+
+      {editingSection === 'areas' && (
+        <Modal onClose={handleEditCancel}>
+          <AreaForm
+            initialData={areas}
+            onSubmit={handleAreasUpdate}
+            onCancel={handleEditCancel}
+            isLoading={loading}
+          />
+        </Modal>
+      )}
+
+      {editingItem !== null && (
+        <Modal onClose={handleEditCancel}>
+          <ProdutoForm
+            initialData={produtos[editingItem]}
+            onSubmit={(data) => handleProdutoUpdate(data, editingItem)}
+            onCancel={handleEditCancel}
+            onDelete={() => handleProdutoRemove(editingItem)}
+            isLoading={loading}
+          />
+        </Modal>
+      )}
+
+      {loading && <LoadingSpinner />}
+      <ToastContainer />
+    </div>
     </ErrorBoundary>
   );
 }

@@ -10,6 +10,17 @@
     display: none !important;
   }
 
+  /* Esconde especificamente botões de ação e edição */
+  .text-blue-500,
+  .text-blue-600,
+  .hover\:text-blue-600,
+  .hover\:text-blue-700,
+  .bg-blue-500,
+  .bg-green-500,
+  .bg-red-500 {
+    display: none !important;
+  }
+
   /* Esconde a última coluna da tabela (ações) */
   table th:last-child,
   table td:last-child {
@@ -26,24 +37,49 @@
   #dashboard {
     margin: 0 !important;
     padding: 1cm !important;
+    box-shadow: none !important;
   }
 
   /* Força cores impressas */
   * {
-    -webkit-print-color-adjust: exact !important;
-    color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    
+  }
+
+  /* Esconde elementos específicos */
+  .print-hidden,
+  .hide-on-print *,
+  button.bg-blue-500,
+  button.bg-green-500,
+  button.bg-red-500 {
+    display: none !important;
+    visibility: hidden !important;
   }
 }
 
-/* Classe utilitária para esconder elementos na impressão */
+/* Configuração da página */
 @page {
   margin: 0;
   size: auto;
 }
 
+/* Classe utilitária para esconder elementos na impressão */
 .hide-on-print {
   @media print {
     display: none !important;
+    visibility: hidden !important;
   }
+}
+
+/* Para quando estiver exportando */
+.exporting .hide-on-print,
+.exporting button,
+.exporting .actions,
+.exporting [role="button"],
+.exporting input[type="button"],
+.exporting input[type="submit"],
+.exporting .no-print {
+  display: none !important;
+  visibility: hidden !important;
 }

@@ -103,7 +103,6 @@ const MetricasCard = ({ data, formatMoney }) => {
 MetricasCard.propTypes = {
   data: PropTypes.shape({
     totalHectares: PropTypes.number.isRequired,
-    areaPotencialTotal: PropTypes.number.isRequired,
     mediaHectaresArea: PropTypes.number.isRequired,
     valorMedioHectare: PropTypes.number.isRequired,
     potencialVendasTotal: PropTypes.number.isRequired,
