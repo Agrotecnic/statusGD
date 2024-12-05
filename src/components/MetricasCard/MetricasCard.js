@@ -58,6 +58,11 @@ const MetricasCard = ({ data, formatMoney }) => {
               <p className="font-semibold">{data.mediaHectaresArea.toFixed(2)} ha</p>
             </div>
           </div>
+             <div className="mt-2">
+             <p className="text-sm text-gray-600">Área Potencial Total</p>
+             <p className="font-semibold">{data.areaPotencialTotal.toFixed(2)} ha</p>
+          </div>
+        </div>
           <div className="mt-3">
             <ProgressBar
               value={data.totalHectares}
@@ -91,13 +96,14 @@ const MetricasCard = ({ data, formatMoney }) => {
           </div>
         </div>
       </div>
-    </div>
+
   );
 };
 
 MetricasCard.propTypes = {
   data: PropTypes.shape({
     totalHectares: PropTypes.number.isRequired,
+    areaPotencialTotal: PropTypes.number.isRequired,
     mediaHectaresArea: PropTypes.number.isRequired,
     valorMedioHectare: PropTypes.number.isRequired,
     potencialVendasTotal: PropTypes.number.isRequired,
