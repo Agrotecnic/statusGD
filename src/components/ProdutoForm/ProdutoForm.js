@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading }) => {
   const [formData, setFormData] = useState({
     nome: initialData.nome || '',
+    cliente: initialData.cliente || '', // Novo campo
     valorVendido: initialData.valorVendido || 0,
     valorBonificado: initialData.valorBonificado || 0,
     areas: initialData.areas || 0
@@ -15,7 +16,7 @@ const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading
     const { name, value } = e.target;
     let processedValue;
 
-    if (name === 'nome') {
+    if (name === 'nome' || name === 'cliente') { // Incluído 'cliente' na condição
       processedValue = value;
     } else {
       processedValue = value === '' ? 0 : parseFloat(value);
@@ -28,14 +29,13 @@ const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading
       ...prev,
       [name]: processedValue
     }));
-
-    // Limpar erro do campo quando ele for editado
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
   const validateForm = () => {
     const newErrors = {};
     if (!formData.nome.trim()) newErrors.nome = 'O nome do produto é obrigatório.';
+    if (!formData.cliente.trim()) newErrors.cliente = 'O nome do cliente é obrigatório.'; // Nova validação
     if (formData.valorVendido < 0) newErrors.valorVendido = 'O valor não pode ser negativo.';
     if (formData.valorBonificado < 0) newErrors.valorBonificado = 'O valor não pode ser negativo.';
     if (formData.areas < 0) newErrors.areas = 'O número de áreas não pode ser negativo.';
@@ -72,10 +72,11 @@ const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {renderField('nome', 'Nome do Produto')}
+      {renderField('cliente', 'Nome do Cliente')} {/* Novo campo */}
       {renderField('valorVendido', 'Valor Vendido', 'number', 0)}
       {renderField('valorBonificado', 'Valor Bonificado', 'number', 0)}
       {renderField('areas', 'Áreas', 'number', 0)}
-
+      
       <div className="flex justify-end space-x-2 pt-4">
         {onDelete && (
           <button
@@ -110,6 +111,7 @@ const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading
 ProdutoForm.propTypes = {
   initialData: PropTypes.shape({
     nome: PropTypes.string,
+    cliente: PropTypes.string, // Novo PropType
     valorVendido: PropTypes.number,
     valorBonificado: PropTypes.number,
     areas: PropTypes.number

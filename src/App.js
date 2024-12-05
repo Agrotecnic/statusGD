@@ -185,9 +185,16 @@ function App() {
       if (snapshot.exists()) {
         const data = snapshot.val();
         console.log('Dados do Firebase:', data);
+        
+        // Processamento dos produtos para garantir o campo cliente
+        const produtosAtualizados = (data.produtos || []).map(produto => ({
+          ...produto,
+          cliente: produto.cliente || '' // Adiciona cliente vazio se não existir
+        }));
+        
         setVendedorInfo(data.vendedorInfo || {});
         setAreas(data.areas || {});
-        setProdutos(data.produtos || []);
+        setProdutos(produtosAtualizados); // Usa a versão atualizada dos produtos
         setImages(data.images || {});
       }
     } catch (error) {
@@ -203,12 +210,13 @@ function App() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Produtos');
     
-      worksheet.addRow(['Produto', 'Valor Vendido', 'Valor Bonificado', 'Áreas', 'Total']);
+      worksheet.addRow(['Produto', 'Cliente', 'Valor Vendido', 'Valor Bonificado', 'Áreas', 'Total']);
       worksheet.getRow(1).font = { bold: true };
       
       produtos.forEach(produto => {
         worksheet.addRow([
           produto.nome,
+          produto.cliente,
           produto.valorVendido || 0,
           produto.valorBonificado || 0,
           produto.areas || 0,
@@ -351,6 +359,7 @@ function App() {
   const addProduto = useCallback(() => {
     const newProduto = {
       nome: "Novo Produto",
+      cliente: "",
       valorVendido: 0,
       valorBonificado: 0,
       areas: 0,

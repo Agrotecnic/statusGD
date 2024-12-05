@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
   return (
@@ -7,15 +8,18 @@ const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
         <thead className="bg-gray-100">
           <tr>
             <th className="py-2 px-4 border-b">Nome</th>
+            <th className="py-2 px-4 border-b">Cliente</th> {/* Nova coluna */}
             <th className="py-2 px-4 border-b">Valor Vendido</th>
             <th className="py-2 px-4 border-b">Valor Bonificado</th>
             <th className="py-2 px-4 border-b">Áreas</th>
+            <th className="py-2 px-4 border-b hide-on-print">Ações</th>
           </tr>
         </thead>
         <tbody>
           {produtos.map((produto, index) => (
             <tr key={index}>
               <td className="py-2 px-4 border-b">{produto.nome}</td>
+              <td className="py-2 px-4 border-b">{produto.cliente || '-'}</td> {/* Nova coluna */}
               <td className="py-2 px-4 border-b">{formatMoney(produto.valorVendido)}</td>
               <td className="py-2 px-4 border-b">{formatMoney(produto.valorBonificado)}</td>
               <td className="py-2 px-4 border-b">{produto.areas}</td>
@@ -34,6 +38,21 @@ const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
       </table>
     </div>
   );
+};
+
+ProdutosTable.propTypes = {
+  produtos: PropTypes.arrayOf(
+    PropTypes.shape({
+      nome: PropTypes.string,
+      cliente: PropTypes.string, // Novo PropType
+      valorVendido: PropTypes.number,
+      valorBonificado: PropTypes.number,
+      areas: PropTypes.number
+    })
+  ).isRequired,
+  onEdit: PropTypes.func.isRequired,
+  formatMoney: PropTypes.func.isRequired,
+  disabled: PropTypes.bool
 };
 
 export default ProdutosTable;
