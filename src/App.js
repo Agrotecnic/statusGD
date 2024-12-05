@@ -249,6 +249,7 @@ function App() {
     try {
       setIsExporting(true);
       setLoading(true);
+      document.body.classList.add('exporting');
       await new Promise(resolve => setTimeout(resolve, 100));
       
       const input = document.getElementById('dashboard');
@@ -306,6 +307,7 @@ function App() {
     } finally {
       setIsExporting(false);
       setLoading(false);
+      document.body.classList.remove('exporting');
     }
   }, [vendedorInfo.nome, showToast]);
 
@@ -516,7 +518,7 @@ function App() {
 return (
   <ErrorBoundary>
     <div className={`min-h-screen bg-gray-100 p-4 ${isExporting ? 'exporting' : ''}`}>
-      <div id="dashboard" className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
+    <div id="dashboard" className={`max-w-6xl mx-auto bg-white rounded-lg shadow-lg ${isExporting ? 'exporting' : ''}`}>
         {/* Header */}
         <header className="p-6 border-b">
   <div className="flex justify-between items-center">
