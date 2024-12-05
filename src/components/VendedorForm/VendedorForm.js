@@ -56,7 +56,7 @@ const VendedorForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Business Unit
+          BU
         </label>
         <input
           type="text"

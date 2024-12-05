@@ -1,22 +1,49 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
-const ProgressBar = ({ value }) => (
-  <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-    <div
-      className="h-full bg-green-500"
-      style={{ width: `${Math.min(Math.max(value || 0, 0), 100)}%` }}
-    />
-  </div>
-);
+const ProgressBar = ({ values }) => {
+  // values é um array de objetos com { value, color, label }
+  const total = values.reduce((acc, curr) => acc + (curr.value || 0), 0);
+  const calculateWidth = (value) => (total > 0 ? (value / total) * 100 : 0);
+
+  return (
+    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden flex">
+      {values.map((item, index) => (
+        <div
+          key={index}
+          className={`h-full ${item.color} transition-all duration-300`}
+          style={{ width: `${calculateWidth(item.value)}%` }}
+          title={`${item.label}: ${calculateWidth(item.value).toFixed(1)}%`}
+        />
+      ))}
+    </div>
+  );
+};
 
 const AreasCard = ({ data, onEdit }) => {
-  const calculatePercentageImplantation = () => {
-    const total = (data?.emAcompanhamento || 0) + (data?.aImplantar || 0);
-    const implanted = data?.emAcompanhamento || 0;
-    return total > 0 ? (implanted / total) * 100 : 0;
-  };
+  const total = data.Acompanhamento + data.aImplantar + data.finalizados;
 
-  const formatPercent = (value) => `${value.toFixed(2)}%`;
+  const progressValues = [
+    {
+      value: data.Acompanhamento,
+      color: 'bg-yellow-500',
+      label: 'Acompanhamento'
+    },
+    {
+      value: data.aImplantar,
+      color: 'bg-blue-500',
+      label: 'A Implantar'
+    },
+    {
+      value: data.finalizados,
+      color: 'bg-green-500',
+      label: 'Finalizados'
+    }
+  ];
+
+  const calculatePercentage = (value) => {
+    return total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+  };
 
   return (
     <div className="border rounded-lg p-4">
@@ -29,31 +56,53 @@ const AreasCard = ({ data, onEdit }) => {
           Editar
         </button>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4 mb-4">
         <div>
-          <p className="font-medium">Em Acompanhamento</p>
-          <p className="text-2xl">{data?.emAcompanhamento || '-'}</p>
+          <p className="font-medium">Acompanhamento</p>
+          <p className="text-2xl">{data.Acompanhamento || '-'}</p>
+          <p className="text-sm text-gray-500">{calculatePercentage(data.Acompanhamento)}%</p>
         </div>
         <div>
           <p className="font-medium">A Implantar</p>
-          <p className="text-2xl">{data?.aImplantar || '-'}</p>
+          <p className="text-2xl">{data.aImplantar || '-'}</p>
+          <p className="text-sm text-gray-500">{calculatePercentage(data.aImplantar)}%</p>
         </div>
         <div>
-          <p className="font-medium">Média Hectare das Áreas</p>
-          <p className="text-2xl">{data?.mediaHectaresArea?.toFixed(2) || '-'} ha</p>
+          <p className="font-medium">Finalizados</p>
+          <p className="text-2xl">{data.finalizados || '-'}</p>
+          <p className="text-sm text-gray-500">{calculatePercentage(data.finalizados)}%</p>
         </div>
-        <div className="col-span-2">
-          <p className="font-medium">Implantação</p>
-          <div className="flex items-center gap-2">
-            <p className="text-2xl">{formatPercent(calculatePercentageImplantation())}</p>
-            <div className="flex-grow">
-              <ProgressBar value={calculatePercentageImplantation()} />
+      </div>
+
+      <div className="mt-4">
+        <p className="font-medium mb-2">Distribuição das Áreas</p>
+        <ProgressBar values={progressValues} />
+        <div className="flex justify-between mt-2 text-sm text-gray-600">
+          {progressValues.map((item, index) => (
+            <div key={index} className="flex items-center">
+              <div className={`w-3 h-3 rounded-full ${item.color} mr-2`}></div>
+              <span>{item.label}</span>
             </div>
-          </div>
+          ))}
         </div>
+      </div>
+
+      <div className="mt-4">
+        <p className="font-medium">Média Hectare das Áreas</p>
+        <p className="text-2xl">{data.mediaHectaresArea?.toFixed(2) || '-'} ha</p>
       </div>
     </div>
   );
+};
+
+AreasCard.propTypes = {
+  data: PropTypes.shape({
+    Acompanhamento: PropTypes.number,
+    aImplantar: PropTypes.number,
+    finalizados: PropTypes.number,
+    mediaHectaresArea: PropTypes.number
+  }).isRequired,
+  onEdit: PropTypes.func.isRequired
 };
 
 export default AreasCard;

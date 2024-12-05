@@ -71,8 +71,9 @@ function App() {
     dataAtualizacao: "",
   });
   const [areas, setAreas] = useState({
-    emAcompanhamento: 0,
+    Acompanhamento: 0,
     aImplantar: 0,
+    finalizados: 0,
     mediaHectaresArea: 0,
     areaPotencialTotal: 0
   });
@@ -487,7 +488,10 @@ function App() {
       </div>
     );
   }
-
+  const formatBU = (bu) => {
+    if (!bu) return '';
+    return bu === '4' ? 'BU4' : `BU${bu}`;
+  };
   return (
     <ErrorBoundary>
       <div className={`min-h-screen bg-gray-100 p-4 ${isExporting ? 'exporting' : ''}`}>
@@ -497,7 +501,7 @@ function App() {
               <div>
                 <h1 className="text-2xl font-bold">{vendedorInfo.nome || 'Dashboard'}</h1>
                 <p className="text-gray-600">
-                  {vendedorInfo.regional} - {vendedorInfo.businessUnit}
+                {vendedorInfo.regional} - {formatBU(vendedorInfo.businessUnit)}
                 </p>
                 <p className="text-sm text-gray-500">
                   Última atualização: {vendedorInfo.dataAtualizacao}
@@ -544,7 +548,7 @@ function App() {
               <div className="space-y-2">
                 <p><strong>Nome:</strong> {vendedorInfo.nome}</p>
                 <p><strong>Regional:</strong> {vendedorInfo.regional}</p>
-                <p><strong>Business Unit:</strong> {vendedorInfo.businessUnit}</p>
+                <p><strong>BU:</strong> {vendedorInfo.businessUnit}</p>
               </div>
             </div>
 

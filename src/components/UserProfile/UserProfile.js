@@ -30,13 +30,13 @@ const UserProfile = () => {
             <h3 className="font-semibold">Informações do Vendedor</h3>
             <p>Nome: {userData.vendedorInfo?.nome || '-'}</p>
             <p>Regional: {userData.vendedorInfo?.regional || '-'}</p>
-            <p>Business Unit: {userData.vendedorInfo?.businessUnit || '-'}</p>
+            <p>BU: {userData.vendedorInfo?.businessUnit || '-'}</p>
             <p>Última Atualização: {userData.vendedorInfo?.dataAtualizacao || '-'}</p>
           </div>
 
           <div>
             <h3 className="font-semibold">Áreas</h3>
-            <p>Em Acompanhamento: {formatNumber(userData.areas?.emAcompanhamento)}</p>
+            <p>Acompanhamento: {formatNumber(userData.areas?.Acompanhamento)}</p>
             <p>A Implantar: {formatNumber(userData.areas?.aImplantar)}</p>
             <p>Média Hectare das Áreas: {
               userData.areas?.hectaresPorArea 
