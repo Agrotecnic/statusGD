@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 const ProgressBar = ({ values }) => {
-  // values é um array de objetos com { value, color, label }
   const total = values.reduce((acc, curr) => acc + (curr.value || 0), 0);
   const calculateWidth = (value) => (total > 0 ? (value / total) * 100 : 0);
 
@@ -21,11 +20,12 @@ const ProgressBar = ({ values }) => {
 };
 
 const AreasCard = ({ data, onEdit }) => {
-  const total = data.Acompanhamento + data.aImplantar + data.finalizados;
-
+  // Corrigido para usar emAcompanhamento
+  const total = data.emAcompanhamento + data.aImplantar + data.finalizados;
+  
   const progressValues = [
     {
-      value: data.Acompanhamento,
+      value: data.emAcompanhamento, // Corrigido aqui
       color: 'bg-yellow-500',
       label: 'Acompanhamento'
     },
@@ -59,8 +59,8 @@ const AreasCard = ({ data, onEdit }) => {
       <div className="grid grid-cols-3 gap-4 mb-4">
         <div>
           <p className="font-medium">Acompanhamento</p>
-          <p className="text-2xl">{data.Acompanhamento || '-'}</p>
-          <p className="text-sm text-gray-500">{calculatePercentage(data.Acompanhamento)}%</p>
+          <p className="text-2xl">{data.emAcompanhamento || '-'}</p> {/* Corrigido aqui */}
+          <p className="text-sm text-gray-500">{calculatePercentage(data.emAcompanhamento)}%</p> {/* Corrigido aqui */}
         </div>
         <div>
           <p className="font-medium">A Implantar</p>
@@ -73,7 +73,6 @@ const AreasCard = ({ data, onEdit }) => {
           <p className="text-sm text-gray-500">{calculatePercentage(data.finalizados)}%</p>
         </div>
       </div>
-
       <div className="mt-4">
         <p className="font-medium mb-2">Distribuição das Áreas</p>
         <ProgressBar values={progressValues} />
@@ -86,7 +85,6 @@ const AreasCard = ({ data, onEdit }) => {
           ))}
         </div>
       </div>
-
       <div className="mt-4">
         <p className="font-medium">Média Hectare das Áreas</p>
         <p className="text-2xl">{data.mediaHectaresArea?.toFixed(2) || '-'} ha</p>
@@ -97,7 +95,7 @@ const AreasCard = ({ data, onEdit }) => {
 
 AreasCard.propTypes = {
   data: PropTypes.shape({
-    Acompanhamento: PropTypes.number,
+    emAcompanhamento: PropTypes.number, // Corrigido aqui
     aImplantar: PropTypes.number,
     finalizados: PropTypes.number,
     mediaHectaresArea: PropTypes.number
