@@ -1,27 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
 const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
+  console.log('AreaForm - Dados Iniciais:', initialData);
+
   const [formData, setFormData] = useState({
+<<<<<<< HEAD
     emAcompanhamento: initialData?.emAcompanhamento || 0,
     finalizadas: initialData?.finalizadas || 0,
     aImplantar: initialData?.aImplantar || 0,
     mediaHectaresArea: initialData?.mediaHectaresArea || 0,
     areaPotencialTotal: initialData?.areaPotencialTotal || 0
+=======
+    emAcompanhamento: Number(initialData.emAcompanhamento) || 0,
+    aImplantar: Number(initialData.aImplantar) || 0,
+    finalizados: Number(initialData.finalizados) || 0,
+    mediaHectaresArea: Number(initialData.mediaHectaresArea) || 0,
+    areaPotencialTotal: Number(initialData.areaPotencialTotal) || 0
+>>>>>>> 346a7925ffc3843dd8cc0b31cd1cd6415bfa7c1a
   });
+
+  // Effect para atualizar o formData quando initialData mudar
+  useEffect(() => {
+    console.log('AreaForm - InitialData atualizado:', initialData);
+    setFormData({
+      emAcompanhamento: Number(initialData.emAcompanhamento) || 0,
+      aImplantar: Number(initialData.aImplantar) || 0,
+      finalizados: Number(initialData.finalizados) || 0,
+      mediaHectaresArea: Number(initialData.mediaHectaresArea) || 0,
+      areaPotencialTotal: Number(initialData.areaPotencialTotal) || 0
+    });
+  }, [initialData]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     const numericValue = value === '' ? 0 : Number(value);
-    console.log(`Atualizando ${name}:`, numericValue);
+    console.log(`AreaForm - Atualizando ${name}:`, numericValue);
     setFormData(prev => ({
       ...prev,
       [name]: numericValue
     }));
   };
 
+  const calculateTotalAreas = () => {
+    const total = formData.emAcompanhamento + formData.aImplantar + formData.finalizados;
+    console.log('AreaForm - Total de áreas calculado:', total);
+    return total;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+<<<<<<< HEAD
     console.log('Submetendo dados:', formData);
     onSubmit({
       ...formData,
@@ -31,6 +60,11 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
       mediaHectaresArea: Number(formData.mediaHectaresArea),
       areaPotencialTotal: Number(formData.areaPotencialTotal)
     });
+=======
+    const totalAreas = calculateTotalAreas();
+    console.log('AreaForm - Submetendo dados:', { ...formData, totalAreas });
+    onSubmit(formData);
+>>>>>>> 346a7925ffc3843dd8cc0b31cd1cd6415bfa7c1a
   };
 
   return (
@@ -46,7 +80,8 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
           onChange={handleChange}
           className="mt-1 block w-full border rounded-md shadow-sm p-2"
           min="0"
-          step="0.01"
+          disabled={isLoading}
+          required
         />
       </div>
 
@@ -61,11 +96,11 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
           onChange={handleChange}
           className="mt-1 block w-full border rounded-md shadow-sm p-2"
           min="0"
-          step="0.01"
+          disabled={isLoading}
+          required
         />
       </div>
 
-      {/* Novo campo para Áreas Finalizadas */}
       <div>
         <label className="block text-sm font-medium text-gray-700">
           Áreas Finalizadas
@@ -77,38 +112,52 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
           onChange={handleChange}
           className="mt-1 block w-full border rounded-md shadow-sm p-2"
           min="0"
-          step="0.01"
+          disabled={isLoading}
+          required
         />
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Média Hectare das Áreas
-        </label>
-        <input
-          type="number"
-          name="mediaHectaresArea"
-          value={formData.mediaHectaresArea}
-          onChange={handleChange}
-          className="mt-1 block w-full border rounded-md shadow-sm p-2"
-          min="0"
-          step="0.01"
-        />
+      <div className="mt-4">
+        <div className="flex justify-between items-center text-sm text-gray-600">
+          <span>Total de Áreas:</span>
+          <span className="font-medium">{calculateTotalAreas()}</span>
+        </div>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Área Potencial Total
-        </label>
-        <input
-          type="number"
-          name="areaPotencialTotal"
-          value={formData.areaPotencialTotal}
-          onChange={handleChange}
-          className="mt-1 block w-full border rounded-md shadow-sm p-2"
-          min="0"
-          step="0.01"
-        />
+      <div className="border-t pt-4 mt-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700">
+            Média Hectare das Áreas
+          </label>
+          <input
+            type="number"
+            name="mediaHectaresArea"
+            value={formData.mediaHectaresArea}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            min="0"
+            step="0.01"
+            disabled={isLoading}
+            required
+          />
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700">
+            Área Potencial Total
+          </label>
+          <input
+            type="number"
+            name="areaPotencialTotal"
+            value={formData.areaPotencialTotal}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md shadow-sm p-2"
+            min="0"
+            step="0.01"
+            disabled={isLoading}
+            required
+          />
+        </div>
       </div>
 
       <div className="flex justify-end space-x-2 pt-4">
@@ -135,8 +184,13 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
 AreaForm.propTypes = {
   initialData: PropTypes.shape({
     emAcompanhamento: PropTypes.number,
+<<<<<<< HEAD
     finalizadas: PropTypes.number,
     aImplantar: PropTypes.number,
+=======
+    aImplantar: PropTypes.number,
+    finalizados: PropTypes.number,
+>>>>>>> 346a7925ffc3843dd8cc0b31cd1cd6415bfa7c1a
     mediaHectaresArea: PropTypes.number,
     areaPotencialTotal: PropTypes.number
   }).isRequired,

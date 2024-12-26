@@ -77,6 +77,7 @@ function App() {
   const [areas, setAreas] = useState({
     emAcompanhamento: 0,
     aImplantar: 0,
+    finalizados: 0,  // Adicionando este campo
     mediaHectaresArea: 0,
     areaPotencialTotal: 0
   });
@@ -108,39 +109,90 @@ function App() {
   }, []);
 
   // Calculated data usando useMemo
-  const calculatedData = useMemo(() => {
-    const getNumericValue = (value) => {
-      if (value === null || value === undefined) return 0;
-      const numValue = parseFloat(value);
-      return isNaN(numValue) ? 0 : numValue;
-    };
+const calculatedData = useMemo(() => {
+  const getNumericValue = (value) => {
+    if (value === null || value === undefined) return 0;
+    const numValue = parseFloat(value);
+    return isNaN(numValue) ? 0 : numValue;
+  };
 
-    const totalAreas = produtos.reduce((acc, prod) => {
-      return acc + getNumericValue(prod.areas);
-    }, 0);
+  console.log('CalculatedData - Estado das Áreas:', areas);
+  
+  // Calcula o total de áreas somando todas as categorias
+  const totalAreas = 
+    getNumericValue(areas.emAcompanhamento) + 
+    getNumericValue(areas.aImplantar) + 
+    getNumericValue(areas.finalizados);
 
-    const mediaHectaresArea = getNumericValue(areas.mediaHectaresArea);
-    const totalHectares = totalAreas * mediaHectaresArea;
-    
-    const totalVendido = produtos.reduce((acc, prod) => acc + getNumericValue(prod.valorVendido), 0);
-    const totalBonificado = produtos.reduce((acc, prod) => acc + getNumericValue(prod.valorBonificado), 0);
-    const totalGeral = totalVendido + totalBonificado;
-    
-    const valorMedioHectare = totalHectares > 0 ? totalGeral / totalHectares : 0;
-    const areaPotencialTotal = getNumericValue(areas.areaPotencialTotal);
-    const potencialVendasTotal = areaPotencialTotal * valorMedioHectare;
+  console.log('CalculatedData - Total de Áreas:', {
+    emAcompanhamento: getNumericValue(areas.emAcompanhamento),
+    aImplantar: getNumericValue(areas.aImplantar),
+    finalizados: getNumericValue(areas.finalizados),
+    totalAreas
+  });
 
-    return {
-      totalHectares,
-      mediaHectaresArea,
-      valorMedioHectare,
-      potencialVendasTotal,
-      totalVendido,
-      totalBonificado,
-      totalGeral,
-      areaPotencialTotal
-    };
-  }, [produtos, areas]);
+  const mediaHectaresArea = getNumericValue(areas.mediaHectaresArea);
+  const totalHectares = totalAreas * mediaHectaresArea;
+
+  console.log('CalculatedData - Cálculo de Hectares:', {
+    totalAreas,
+    mediaHectaresArea,
+    totalHectares
+  });
+
+  // Cálculos financeiros
+  const totalVendido = produtos.reduce((acc, prod) => {
+    const valorVendido = getNumericValue(prod.valorVendido);
+    console.log('Valor vendido produto:', valorVendido);
+    return acc + valorVendido;
+  }, 0);
+
+  const totalBonificado = produtos.reduce((acc, prod) => {
+    const valorBonificado = getNumericValue(prod.valorBonificado);
+    console.log('Valor bonificado produto:', valorBonificado);
+    return acc + valorBonificado;
+  }, 0);
+
+  const totalGeral = totalVendido + totalBonificado;
+
+  console.log('CalculatedData - Valores Financeiros:', {
+    totalVendido,
+    totalBonificado,
+    totalGeral
+  });
+  
+  // Cálculo do valor médio por hectare e potencial
+  const valorMedioHectare = totalHectares > 0 ? totalGeral / totalHectares : 0;
+  const areaPotencialTotal = getNumericValue(areas.areaPotencialTotal);
+  const potencialVendasTotal = areaPotencialTotal * valorMedioHectare;
+
+  console.log('CalculatedData - Métricas Finais:', {
+    valorMedioHectare,
+    areaPotencialTotal,
+    potencialVendasTotal
+  });
+
+  const resultados = {
+    totalAreas,
+    totalHectares,
+    mediaHectaresArea,
+    valorMedioHectare,
+    potencialVendasTotal,
+    totalVendido,
+    totalBonificado,
+    totalGeral,
+    areaPotencialTotal,
+    areasDistribuicao: {
+      emAcompanhamento: getNumericValue(areas.emAcompanhamento),
+      aImplantar: getNumericValue(areas.aImplantar),
+      finalizados: getNumericValue(areas.finalizados)
+    }
+  };
+
+  console.log('CalculatedData - Resultado Final:', resultados);
+
+  return resultados;
+}, [produtos, areas]);
 // Fetch user data function
   const fetchUserData = useCallback(async (uid) => {
     try {
@@ -157,7 +209,7 @@ function App() {
         setAreas({
           emAcompanhamento: Number(areasData.emAcompanhamento || 0),
           aImplantar: Number(areasData.aImplantar || 0),
-          finalizadas: Number(areasData.finalizadas || 0), // Adiciona campo finalizadas
+          finalizados: Number(areasData.finalizados || 0), // Adiciona campo finalizados
           mediaHectaresArea: Number(areasData.mediaHectaresArea || 0),
           areaPotencialTotal: Number(areasData.areaPotencialTotal || 0)
         });
@@ -304,14 +356,13 @@ function App() {
   const handleAreasUpdate = useCallback(async (data) => {
     try {
       setLoading(true);
-      // Converte todos os valores para número e garante que sejam valores válidos
       const formattedData = {
         ...data,
         mediaHectaresArea: Number(data.mediaHectaresArea) || 0,
         areaPotencialTotal: Number(data.areaPotencialTotal) || 0,
         emAcompanhamento: Number(data.emAcompanhamento) || 0,
         aImplantar: Number(data.aImplantar) || 0,
-        finalizadas: Number(data.finalizadas) || 0  // Garante que finalizadas seja incluído
+        finalizados: Number(data.finalizados) || 0  // Mantendo a versão mais recente
       };
       
       console.log('Atualizando áreas:', formattedData);
