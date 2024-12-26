@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Routes, Route, Navigate, useNavigate, BrowserRouter } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, Link } from 'react-router-dom';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
@@ -748,6 +748,19 @@ const calculatedData = useMemo(() => {
               )
             }
           />
+          
+          {/* Adicionar rota 404 */}
+          <Route path="*" element={
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="text-center">
+                <h1 className="text-4xl font-bold mb-4">Página não encontrada</h1>
+                <p className="mb-4">A página que você está procurando não existe.</p>
+                <Link to="/" className="text-blue-500 hover:text-blue-600">
+                  Voltar para a página inicial
+                </Link>
+              </div>
+            </div>
+          } />
         </Routes>
 
         {/* Modais */}
