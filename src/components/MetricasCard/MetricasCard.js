@@ -64,11 +64,6 @@ const MetricasCard = ({ data, formatMoney, formatPercent }) => {  // Adicionado 
     calculatedTotalHectares
   });
 
-  // Calcula a porcentagem de realização da área
-  const areaRealizationPercent = data.areaPotencialTotal > 0 
-    ? (calculatedTotalHectares / ensureValidNumber(data.areaPotencialTotal)) * 100 
-    : 0;
-
   // Calcula o valor médio por hectare e potencial de vendas
   const metricsFinanceiras = useMemo(() => {
     const totalHectares = calculatedTotalHectares || 0;
@@ -93,6 +88,25 @@ const MetricasCard = ({ data, formatMoney, formatPercent }) => {  // Adicionado 
     };
   }, [calculatedTotalHectares, data.totalVendido, data.totalBonificado, data.areaPotencialTotal]);
 
+  // Calcula os percentuais com base nos totais
+  const calcPercent = (value, total) => {
+    if (!total) return 0;
+    return (value / total) * 100;
+  };
+
+  // Calcula totais para percentuais
+  const totalValores = data.totalVendido + data.totalBonificado;
+  
+  // Calcula percentual de realização da área
+  const areaRealizationPercent = data.areaPotencialTotal > 0 
+    ? (calculatedTotalHectares / data.areaPotencialTotal) * 100 
+    : 0;
+
+  // Calcula percentual de realização financeira
+  const financialRealizationPercent = metricsFinanceiras.potencialVendasTotal > 0
+    ? (data.totalGeral / metricsFinanceiras.potencialVendasTotal) * 100
+    : 0;
+
   return (
     <div className="border rounded-lg p-4">
       <h2 className="text-xl font-semibold mb-4">Métricas</h2>
@@ -108,15 +122,13 @@ const MetricasCard = ({ data, formatMoney, formatPercent }) => {  // Adicionado 
                 <div>
                   <span className="font-semibold">{formatMoney(data.totalVendido)}</span>
                   <span className="text-sm text-gray-500 ml-2">
-                    ({formatPercent((data.totalVendido / data.totalGeral) * 100)})
+                    ({formatPercent(calcPercent(data.totalVendido, totalValores))})
                   </span>
                 </div>
               </div>
               <ProgressBar
-                value={data.totalVendido}
-                total={data.totalGeral}
+                percent={calcPercent(data.totalVendido, totalValores)}
                 color="green"
-                showLabel={false}
               />
             </div>
             <div>
@@ -125,15 +137,13 @@ const MetricasCard = ({ data, formatMoney, formatPercent }) => {  // Adicionado 
                 <div>
                   <span className="font-semibold">{formatMoney(data.totalBonificado)}</span>
                   <span className="text-sm text-gray-500 ml-2">
-                    ({formatPercent((data.totalBonificado / data.totalGeral) * 100)})
+                    ({formatPercent(calcPercent(data.totalBonificado, totalValores))})
                   </span>
                 </div>
               </div>
               <ProgressBar
-                value={data.totalBonificado}
-                total={data.totalGeral}
+                percent={calcPercent(data.totalBonificado, totalValores)}
                 color="blue"
-                showLabel={false}
               />
             </div>
             <div className="mt-2 pt-2 border-t">
@@ -150,6 +160,10 @@ const MetricasCard = ({ data, formatMoney, formatPercent }) => {  // Adicionado 
           <h3 className="font-medium mb-2">Métricas de Área</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <p className="text-sm text-gray-600">Potencial de Área Total</p>
+              <p className="font-semibold">{ensureValidNumber(data.areaPotencialTotal).toFixed(2)} ha</p>
+            </div>
+            <div>
               <p className="text-sm text-gray-600">Total em Hectares</p>
               <p className="font-semibold">{calculatedTotalHectares.toFixed(2)} ha</p>
             </div>
@@ -158,18 +172,15 @@ const MetricasCard = ({ data, formatMoney, formatPercent }) => {  // Adicionado 
               <p className="font-semibold">{ensureValidNumber(data.mediaHectaresArea).toFixed(2)} ha</p>
             </div>
           </div>
-          <div className="mt-2">
-            <p className="text-sm text-gray-600">Área Potencial Total</p>
-            <p className="font-semibold">{ensureValidNumber(data.areaPotencialTotal).toFixed(2)} ha</p>
-          </div>
-          <div className="mt-3">
+          <div className="mt-4">
+            <div className="flex justify-end mb-1">
+              <span className="text-sm text-gray-500">
+                {formatPercent(areaRealizationPercent)}
+              </span>
+            </div>
             <ProgressBar
-              value={calculatedTotalHectares}
-              total={ensureValidNumber(data.areaPotencialTotal)}
-              label="Realização da Área Potencial"
+              percent={areaRealizationPercent}
               color="yellow"
-              showLabel={true}
-              showPercent={true} // Adicionado para mostrar o percentual
             />
           </div>
         </div>
@@ -177,24 +188,26 @@ const MetricasCard = ({ data, formatMoney, formatPercent }) => {  // Adicionado 
         {/* Métricas Financeiras */}
         <div>
           <h3 className="font-medium mb-2">Métricas Financeiras</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 mb-2">
+            <div>
+              <p className="text-sm text-gray-600">Potencial de Vendas</p>
+              <p className="font-semibold">{formatMoney(metricsFinanceiras.potencialVendasTotal)}</p>
+            </div>
             <div>
               <p className="text-sm text-gray-600">Valor Médio/Hectare</p>
               <p className="font-semibold">{formatMoney(metricsFinanceiras.valorMedioHectare)}</p>
             </div>
-            <div>
-              <p className="text-sm text-gray-600">Potencial de Vendas Total</p>
-              <p className="font-semibold">{formatMoney(metricsFinanceiras.potencialVendasTotal)}</p>
-            </div>
           </div>
-          <div className="mt-3">
+          <div className="mt-2">
+            <div className="flex justify-between items-center mb-1">
+              <span className="text-sm text-gray-600">Realização do Potencial de Vendas</span>
+              <span className="text-sm text-gray-500">
+                {formatPercent(financialRealizationPercent)}
+              </span>
+            </div>
             <ProgressBar
-              value={data.totalGeral}
-              total={metricsFinanceiras.potencialVendasTotal}
-              label="Realização do Potencial de Vendas"
+              percent={financialRealizationPercent}
               color="indigo"
-              showLabel={true}
-              showPercent={true} // Adicionado para mostrar o percentual
             />
           </div>
         </div>

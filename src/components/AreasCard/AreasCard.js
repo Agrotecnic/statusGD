@@ -3,45 +3,18 @@ import PropTypes from 'prop-types';
 import ProgressBar from '../ProgressBar/ProgressBar';
 
 const AreasCard = ({ data, formatPercent, onEdit, disabled }) => {
-  // Função auxiliar para garantir valores numéricos válidos
-  const ensureValidNumber = (value) => {
-    if (value === undefined || value === null) return 0;
-    const num = Number(value);
-    return isNaN(num) ? 0 : num;
+  // Garante que todos os valores sejam números
+  const emAcompanhamento = Number(data?.emAcompanhamento || 0);
+  const aImplantar = Number(data?.aImplantar || 0);
+  const finalizados = Number(data?.finalizados || 0); // Corrigido para usar finalizados
+  
+  // Calcula o total incluindo finalizados
+  const total = emAcompanhamento + aImplantar + finalizados;
+  
+  // Calcula as porcentagens
+  const calcPercent = (value) => {
+    return total > 0 ? (value / total) * 100 : 0;
   };
-
-  // Calcula o total de áreas
-  const totalAreas = 
-    ensureValidNumber(data.emAcompanhamento) + 
-    ensureValidNumber(data.finalizados) + 
-    ensureValidNumber(data.aImplantar);
-
-  // Calcula os percentuais
-  const getPercentage = (value) => {
-    if (totalAreas === 0) return 0;
-    return (ensureValidNumber(value) / totalAreas) * 100;
-  };
-
-  const areaItems = [
-    {
-      label: 'Em Acompanhamento',
-      value: data.emAcompanhamento,
-      color: 'blue',
-      percent: getPercentage(data.emAcompanhamento)
-    },
-    {
-      label: 'Finalizados',
-      value: data.finalizados,
-      color: 'green',
-      percent: getPercentage(data.finalizados)
-    },
-    {
-      label: 'A Implantar',
-      value: data.aImplantar,
-      color: 'yellow',
-      percent: getPercentage(data.aImplantar)
-    }
-  ];
 
   return (
     <div className="border rounded-lg p-4">
@@ -55,29 +28,34 @@ const AreasCard = ({ data, formatPercent, onEdit, disabled }) => {
           Editar
         </button>
       </div>
-      
-      <div className="grid grid-cols-1 gap-4">
-        {areaItems.map((item) => (
-          <div key={item.label} className="flex flex-col">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">{item.label}</span>
-              <div className="text-right">
-                <span className="font-semibold">{ensureValidNumber(item.value)}</span>
-                <span className="text-sm text-gray-500 ml-2">({formatPercent(item.percent)})</span>
-              </div>
-            </div>
-            <ProgressBar
-              value={item.value}
-              total={totalAreas}
-              color={item.color}
-              showLabel={false} // Adicionado para remover o label da barra
-            />
-          </div>
-        ))}
-        
-        <div className="border-t pt-4">
+      <div className="space-y-4">
+        <div>
+          <p className="text-sm text-gray-600">Em Acompanhamento</p>
+          <p className="text-lg font-semibold">{emAcompanhamento} ({formatPercent(calcPercent(emAcompanhamento))})</p>
+          <ProgressBar 
+            percent={calcPercent(emAcompanhamento)} 
+            color="blue"
+          />
+        </div>
+        <div>
+          <p className="text-sm text-gray-600">A Implantar</p>
+          <p className="text-lg font-semibold">{aImplantar} ({formatPercent(calcPercent(aImplantar))})</p>
+          <ProgressBar 
+            percent={calcPercent(aImplantar)} 
+            color="yellow"
+          />
+        </div>
+        <div>
+          <p className="text-sm text-gray-600">Finalizados</p>
+          <p className="text-lg font-semibold">{finalizados} ({formatPercent(calcPercent(finalizados))})</p>
+          <ProgressBar 
+            percent={calcPercent(finalizados)} 
+            color="green"
+          />
+        </div>
+        <div className="border-t pt-2">
           <p className="text-sm text-gray-600">Total de Áreas</p>
-          <p className="font-bold">{totalAreas}</p>
+          <p className="text-xl font-bold">{total}</p>
         </div>
       </div>
     </div>

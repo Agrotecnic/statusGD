@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+// Corrigir importação (remova a extensão .js)
+import { normalizeBU, normalizeRegional } from '../../utils/normalizer.js';
 
 // Componentes
 import AreasCard from '../AreasCard/AreasCard';
@@ -16,7 +18,6 @@ const DashboardContent = ({
   images,
   loading,
   isExporting,
-  calculatedData,
   handleLogout,
   handleEditStart,
   handleImageUpload,
@@ -29,17 +30,24 @@ const DashboardContent = ({
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
 
+  // Adicione normalização quando receber os dados
+  const normalizedVendedorInfo = {
+    ...vendedorInfo,
+    businessUnit: normalizeBU(vendedorInfo.businessUnit) || vendedorInfo.businessUnit,
+    regional: normalizeRegional(vendedorInfo.regional) || vendedorInfo.regional
+  };
+
   // Prepara os dados para o MetricasCard com o mapeamento correto dos campos
   const metricsData = useMemo(() => {
     // Converte todos os valores para número e garante valores válidos
     const acompanhamento = Number(areas?.emAcompanhamento || 0);
-    const finalizadas = Number(areas?.finalizadas || 0);
+    const finalizados = Number(areas?.finalizados || 0); // Corrigido de finalizadas para finalizados
     const implantar = Number(areas?.aImplantar || 0);
     const mediaHectares = Number(areas?.mediaHectaresArea || 0);
 
     console.log('Dados das Áreas:', {
       acompanhamento,
-      finalizadas,
+      finalizados, // Log atualizado
       implantar,
       mediaHectares,
       areas
@@ -47,7 +55,7 @@ const DashboardContent = ({
 
     return {
       areasAcompanhamento: acompanhamento,
-      areasFinalizadas: finalizadas,
+      areasFinalizadas: finalizados, // Corrigido para usar o valor correto
       areasImplantar: implantar,
       mediaHectaresArea: mediaHectares,
       areaPotencialTotal: Number(areas?.areaPotencialTotal || 0),
@@ -63,12 +71,12 @@ const DashboardContent = ({
       <header className="p-6 border-b">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold">{vendedorInfo.nome || 'Dashboard'}</h1>
+            <h1 className="text-2xl font-bold">{normalizedVendedorInfo.nome || 'Dashboard'}</h1>
             <p className="text-gray-600">
-              {vendedorInfo.regional} - {vendedorInfo.businessUnit}
+              {normalizedVendedorInfo.regional} - {normalizedVendedorInfo.businessUnit}
             </p>
             <p className="text-sm text-gray-500">
-              Última atualização: {vendedorInfo.dataAtualizacao}
+              Última atualização: {normalizedVendedorInfo.dataAtualizacao}
             </p>
           </div>
           <div className="space-x-4 hide-on-print">
@@ -120,9 +128,9 @@ const DashboardContent = ({
             </button>
           </div>
           <div className="space-y-2">
-            <p><strong>Nome:</strong> {vendedorInfo.nome || '-'}</p>
-            <p><strong>Regional:</strong> {vendedorInfo.regional || '-'}</p>
-            <p><strong>Business Unit:</strong> {vendedorInfo.businessUnit || '-'}</p>
+            <p><strong>Nome:</strong> {normalizedVendedorInfo.nome || '-'}</p>
+            <p><strong>Regional:</strong> {normalizedVendedorInfo.regional || '-'}</p>
+            <p><strong>Business Unit:</strong> {normalizedVendedorInfo.businessUnit || '-'}</p>
           </div>
         </div>
 
@@ -213,7 +221,6 @@ DashboardContent.propTypes = {
   images: PropTypes.object.isRequired,
   loading: PropTypes.bool.isRequired,
   isExporting: PropTypes.bool.isRequired,
-  calculatedData: PropTypes.object.isRequired,
   handleLogout: PropTypes.func.isRequired,
   handleEditStart: PropTypes.func.isRequired,
   handleImageUpload: PropTypes.func.isRequired,
