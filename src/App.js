@@ -653,7 +653,7 @@ const calculatedData = useMemo(() => {
             path="/" 
             element={
               user ? (
-                <Navigate to="/dashboard" replace />
+                <Navigate to="/dashboard" />
               ) : (
                 <div className="flex items-center justify-center min-h-screen bg-gray-100">
                   {isSignUp ? (
@@ -711,7 +711,7 @@ const calculatedData = useMemo(() => {
             path="/dashboard" 
             element={
               !user ? (
-                <Navigate to="/" replace />
+                <Navigate to="/" />
               ) : (
                 <DashboardContent 
                   user={user}
@@ -739,13 +739,9 @@ const calculatedData = useMemo(() => {
           <Route 
             path="/dashboard-geral" 
             element={
-              !user ? (
-                <Navigate to="/" replace />
-              ) : user.role !== 'admin' ? (
-                <Navigate to="/dashboard" replace />
-              ) : (
-                <DashboardGeral />
-              )
+              !user ? <Navigate to="/" /> :
+              user.role !== 'admin' ? <Navigate to="/dashboard" /> :
+              <DashboardGeral />
             }
           />
           
