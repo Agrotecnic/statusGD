@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, BrowserRouter } from 'react-router-dom';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
@@ -151,7 +151,17 @@ function App() {
       if (snapshot.exists()) {
         const data = snapshot.val();
         setVendedorInfo(data.vendedorInfo || {});
-        setAreas(data.areas || {});
+        
+        // Garante que todos os campos necessários existam
+        const areasData = data.areas || {};
+        setAreas({
+          emAcompanhamento: Number(areasData.emAcompanhamento || 0),
+          aImplantar: Number(areasData.aImplantar || 0),
+          finalizadas: Number(areasData.finalizadas || 0), // Adiciona campo finalizadas
+          mediaHectaresArea: Number(areasData.mediaHectaresArea || 0),
+          areaPotencialTotal: Number(areasData.areaPotencialTotal || 0)
+        });
+        
         setProdutos(data.produtos || []);
         setImages(data.images || {});
         showToast('Dados carregados com sucesso', 'success');
@@ -300,8 +310,11 @@ function App() {
         mediaHectaresArea: Number(data.mediaHectaresArea) || 0,
         areaPotencialTotal: Number(data.areaPotencialTotal) || 0,
         emAcompanhamento: Number(data.emAcompanhamento) || 0,
-        aImplantar: Number(data.aImplantar) || 0
+        aImplantar: Number(data.aImplantar) || 0,
+        finalizadas: Number(data.finalizadas) || 0  // Garante que finalizadas seja incluído
       };
+      
+      console.log('Atualizando áreas:', formattedData);
       
       setAreas(formattedData);
       await saveData();
@@ -672,11 +685,13 @@ function App() {
             }
           />
 
-          <Route
-            path="/dashboard-geral"
+          <Route 
+            path="/dashboard-geral" 
             element={
-              !user || user.role !== 'admin' ? (
+              !user ? (
                 <Navigate to="/" replace />
+              ) : user.role !== 'admin' ? (
+                <Navigate to="/dashboard" replace />
               ) : (
                 <DashboardGeral />
               )

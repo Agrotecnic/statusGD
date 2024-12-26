@@ -7,6 +7,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 function DashboardGeral() {
+  console.log('DashboardGeral renderizando');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [vendedores, setVendedores] = useState([]);
@@ -17,11 +18,18 @@ function DashboardGeral() {
   const db = getDatabase();
 
   const calcularTotalVendido = useCallback((produtos) => {
-    return produtos ? produtos.reduce((acc, p) => acc + (p.valorVendido || 0), 0) : 0;
+    if (!produtos || !Array.isArray(produtos)) return 0;
+    return produtos.reduce((acc, p) => acc + (Number(p.valorVendido) || 0), 0);
+  }, []);
+
+  const calcularTotalBonificado = useCallback((produtos) => {
+    if (!produtos || !Array.isArray(produtos)) return 0;
+    return produtos.reduce((acc, p) => acc + (Number(p.valorBonificado) || 0), 0);
   }, []);
 
   const calcularTotalAreas = useCallback((areas) => {
-    return areas ? areas.emAcompanhamento + areas.aImplantar : 0;
+    if (!areas) return 0;
+    return (Number(areas.emAcompanhamento) || 0) + (Number(areas.aImplantar) || 0);
   }, []);
 
   const fetchVendedoresData = useCallback(async () => {
@@ -33,21 +41,26 @@ function DashboardGeral() {
         id,
         ...data.vendedorInfo,
         totalVendido: calcularTotalVendido(data.produtos),
+        totalBonificado: calcularTotalBonificado(data.produtos),
         totalAreas: calcularTotalAreas(data.areas)
       }));
+      
       setVendedores(vendedoresList);
-      setTotalVendas(vendedoresList.reduce((acc, v) => acc + v.totalVendido, 0));
-      setTotalAreas(vendedoresList.reduce((acc, v) => acc + v.totalAreas, 0));
+      setTotalVendas(vendedoresList.reduce((acc, v) => acc + (v.totalVendido || 0) + (v.totalBonificado || 0), 0));
+      setTotalAreas(vendedoresList.reduce((acc, v) => acc + (v.totalAreas || 0), 0));
     }
-  }, [db, calcularTotalVendido, calcularTotalAreas]);
+  }, [db, calcularTotalVendido, calcularTotalBonificado, calcularTotalAreas]);
 
   useEffect(() => {
+    console.log('DashboardGeral - Verificando autenticação');
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log('Usuario atual:', currentUser);
       if (currentUser) {
         const userRef = ref(db, `users/${currentUser.uid}`);
         const snapshot = await get(userRef);
         if (snapshot.exists()) {
           const userData = snapshot.val();
+          console.log('Dados do usuário:', userData);
           setUser({ ...currentUser, role: userData.role });
         } else {
           setUser(currentUser);
@@ -62,7 +75,9 @@ function DashboardGeral() {
   }, [auth, db]);
 
   useEffect(() => {
+    console.log('Usuario atual:', user);
     if (user) {
+      console.log('Buscando dados dos vendedores...');
       fetchVendedoresData();
     }
   }, [user, fetchVendedoresData]);
@@ -85,10 +100,6 @@ function DashboardGeral() {
     return <div>Carregando...</div>;
   }
 
-  if (!user || user.role !== 'admin') {
-    return <Navigate to="/" replace />;
-  }
-
   return (
     <div className="container mx-auto px-4 py-8">
       <ToastContainer />
@@ -102,13 +113,21 @@ function DashboardGeral() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
         <div className="bg-blue-100 p-4 rounded-lg shadow">
           <h2 className="text-xl font-semibold mb-2">Total de Vendedores</h2>
           <p className="text-3xl font-bold">{vendedores.length}</p>
         </div>
         <div className="bg-green-100 p-4 rounded-lg shadow">
-          <h2 className="text-xl font-semibold mb-2">Total de Vendas</h2>
+          <h2 className="text-xl font-semibold mb-2">Total Vendido</h2>
+          <p className="text-3xl font-bold">{formatMoney(vendedores.reduce((acc, v) => acc + (v.totalVendido || 0), 0))}</p>
+        </div>
+        <div className="bg-purple-100 p-4 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-2">Total Bonificado</h2>
+          <p className="text-3xl font-bold">{formatMoney(vendedores.reduce((acc, v) => acc + (v.totalBonificado || 0), 0))}</p>
+        </div>
+        <div className="bg-indigo-100 p-4 rounded-lg shadow">
+          <h2 className="text-xl font-semibold mb-2">Total Geral</h2>
           <p className="text-3xl font-bold">{formatMoney(totalVendas)}</p>
         </div>
         <div className="bg-yellow-100 p-4 rounded-lg shadow">
@@ -125,6 +144,8 @@ function DashboardGeral() {
               <th className="py-2 px-4 text-left">Regional</th>
               <th className="py-2 px-4 text-left">Business Unit</th>
               <th className="py-2 px-4 text-right">Total Vendido</th>
+              <th className="py-2 px-4 text-right">Total Bonificado</th>
+              <th className="py-2 px-4 text-right">Total Geral</th>
               <th className="py-2 px-4 text-right">Total Áreas</th>
             </tr>
           </thead>
@@ -135,6 +156,8 @@ function DashboardGeral() {
                 <td className="py-2 px-4">{vendedor.regional}</td>
                 <td className="py-2 px-4">{vendedor.businessUnit}</td>
                 <td className="py-2 px-4 text-right">{formatMoney(vendedor.totalVendido)}</td>
+                <td className="py-2 px-4 text-right">{formatMoney(vendedor.totalBonificado)}</td>
+                <td className="py-2 px-4 text-right">{formatMoney(vendedor.totalVendido + vendedor.totalBonificado)}</td>
                 <td className="py-2 px-4 text-right">{vendedor.totalAreas}</td>
               </tr>
             ))}

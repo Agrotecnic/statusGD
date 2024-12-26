@@ -3,11 +3,11 @@ import PropTypes from 'prop-types';
 
 const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
   const [formData, setFormData] = useState({
-    Acompanhamento: Number(initialData.Acompanhamento) || 0,
-    aImplantar: Number(initialData.aImplantar) || 0,
-    finalizados: Number(initialData.finalizados) || 0, // Novo campo
-    mediaHectaresArea: Number(initialData.mediaHectaresArea) || 0,
-    areaPotencialTotal: Number(initialData.areaPotencialTotal) || 0
+    emAcompanhamento: initialData?.emAcompanhamento || 0,
+    finalizadas: initialData?.finalizadas || 0,
+    aImplantar: initialData?.aImplantar || 0,
+    mediaHectaresArea: initialData?.mediaHectaresArea || 0,
+    areaPotencialTotal: initialData?.areaPotencialTotal || 0
   });
 
   const handleChange = (e) => {
@@ -23,7 +23,14 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log('Submetendo dados:', formData);
-    onSubmit(formData);
+    onSubmit({
+      ...formData,
+      emAcompanhamento: Number(formData.emAcompanhamento),
+      finalizadas: Number(formData.finalizadas),
+      aImplantar: Number(formData.aImplantar),
+      mediaHectaresArea: Number(formData.mediaHectaresArea),
+      areaPotencialTotal: Number(formData.areaPotencialTotal)
+    });
   };
 
   return (
@@ -34,8 +41,8 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
         </label>
         <input
           type="number"
-          name="Acompanhamento"
-          value={formData.Acompanhamento}
+          name="emAcompanhamento"
+          value={formData.emAcompanhamento}
           onChange={handleChange}
           className="mt-1 block w-full border rounded-md shadow-sm p-2"
           min="0"
@@ -65,8 +72,8 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
         </label>
         <input
           type="number"
-          name="finalizados"
-          value={formData.finalizados}
+          name="finalizadas"
+          value={formData.finalizadas}
           onChange={handleChange}
           className="mt-1 block w-full border rounded-md shadow-sm p-2"
           min="0"
@@ -127,9 +134,9 @@ const AreaForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
 
 AreaForm.propTypes = {
   initialData: PropTypes.shape({
-    Acompanhamento: PropTypes.number,
+    emAcompanhamento: PropTypes.number,
+    finalizadas: PropTypes.number,
     aImplantar: PropTypes.number,
-    finalizados: PropTypes.number, // Adicionado aos PropTypes
     mediaHectaresArea: PropTypes.number,
     areaPotencialTotal: PropTypes.number
   }).isRequired,

@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 
 // Componentes
 import AreasCard from '../AreasCard/AreasCard';
@@ -28,6 +28,34 @@ const DashboardContent = ({
 }) => {
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin';
+
+  // Prepara os dados para o MetricasCard com o mapeamento correto dos campos
+  const metricsData = useMemo(() => {
+    // Converte todos os valores para número e garante valores válidos
+    const acompanhamento = Number(areas?.emAcompanhamento || 0);
+    const finalizadas = Number(areas?.finalizadas || 0);
+    const implantar = Number(areas?.aImplantar || 0);
+    const mediaHectares = Number(areas?.mediaHectaresArea || 0);
+
+    console.log('Dados das Áreas:', {
+      acompanhamento,
+      finalizadas,
+      implantar,
+      mediaHectares,
+      areas
+    });
+
+    return {
+      areasAcompanhamento: acompanhamento,
+      areasFinalizadas: finalizadas,
+      areasImplantar: implantar,
+      mediaHectaresArea: mediaHectares,
+      areaPotencialTotal: Number(areas?.areaPotencialTotal || 0),
+      totalVendido: produtos.reduce((acc, p) => acc + Number(p.valorVendido || 0), 0),
+      totalBonificado: produtos.reduce((acc, p) => acc + Number(p.valorBonificado || 0), 0),
+      totalGeral: produtos.reduce((acc, p) => acc + Number(p.valorVendido || 0) + Number(p.valorBonificado || 0), 0)
+    };
+  }, [areas, produtos]);
 
   return (
     <div id="dashboard" className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
@@ -141,9 +169,9 @@ const DashboardContent = ({
 
         {/* Metrics Card */}
         <MetricasCard 
-          data={calculatedData}
+          data={metricsData}
           formatMoney={formatMoney}
-          formatPercent={formatPercent}
+          formatPercent={formatPercent} // Adicionado formatPercent
         />
       </div>
 

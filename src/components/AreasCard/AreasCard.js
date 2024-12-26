@@ -1,49 +1,47 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import ProgressBar from '../ProgressBar/ProgressBar';
 
-const ProgressBar = ({ values }) => {
-  // values é um array de objetos com { value, color, label }
-  const total = values.reduce((acc, curr) => acc + (curr.value || 0), 0);
-  const calculateWidth = (value) => (total > 0 ? (value / total) * 100 : 0);
+const AreasCard = ({ data, formatPercent, onEdit, disabled }) => {
+  // Função auxiliar para garantir valores numéricos válidos
+  const ensureValidNumber = (value) => {
+    if (value === undefined || value === null) return 0;
+    const num = Number(value);
+    return isNaN(num) ? 0 : num;
+  };
 
-  return (
-    <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden flex">
-      {values.map((item, index) => (
-        <div
-          key={index}
-          className={`h-full ${item.color} transition-all duration-300`}
-          style={{ width: `${calculateWidth(item.value)}%` }}
-          title={`${item.label}: ${calculateWidth(item.value).toFixed(1)}%`}
-        />
-      ))}
-    </div>
-  );
-};
+  // Calcula o total de áreas
+  const totalAreas = 
+    ensureValidNumber(data.emAcompanhamento) + 
+    ensureValidNumber(data.finalizadas) + 
+    ensureValidNumber(data.aImplantar);
 
-const AreasCard = ({ data, onEdit }) => {
-  const total = data.Acompanhamento + data.aImplantar + data.finalizados;
+  // Calcula os percentuais
+  const getPercentage = (value) => {
+    if (totalAreas === 0) return 0;
+    return (ensureValidNumber(value) / totalAreas) * 100;
+  };
 
-  const progressValues = [
+  const areaItems = [
     {
-      value: data.Acompanhamento,
-      color: 'bg-yellow-500',
-      label: 'Acompanhamento'
+      label: 'Em Acompanhamento',
+      value: data.emAcompanhamento,
+      color: 'blue',
+      percent: getPercentage(data.emAcompanhamento)
     },
     {
+      label: 'Finalizadas',
+      value: data.finalizadas,
+      color: 'green',
+      percent: getPercentage(data.finalizadas)
+    },
+    {
+      label: 'A Implantar',
       value: data.aImplantar,
-      color: 'bg-blue-500',
-      label: 'A Implantar'
-    },
-    {
-      value: data.finalizados,
-      color: 'bg-green-500',
-      label: 'Finalizados'
+      color: 'yellow',
+      percent: getPercentage(data.aImplantar)
     }
   ];
-
-  const calculatePercentage = (value) => {
-    return total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
-  };
 
   return (
     <div className="border rounded-lg p-4">
@@ -51,45 +49,36 @@ const AreasCard = ({ data, onEdit }) => {
         <h2 className="text-xl font-semibold">Áreas</h2>
         <button
           onClick={onEdit}
-          className="text-blue-500 hover:text-blue-600 print-hidden"
+          className="text-blue-500 hover:text-blue-600 hide-on-print"
+          disabled={disabled}
         >
           Editar
         </button>
       </div>
-      <div className="grid grid-cols-3 gap-4 mb-4">
-        <div>
-          <p className="font-medium">Acompanhamento</p>
-          <p className="text-2xl">{data.Acompanhamento || '-'}</p>
-          <p className="text-sm text-gray-500">{calculatePercentage(data.Acompanhamento)}%</p>
-        </div>
-        <div>
-          <p className="font-medium">A Implantar</p>
-          <p className="text-2xl">{data.aImplantar || '-'}</p>
-          <p className="text-sm text-gray-500">{calculatePercentage(data.aImplantar)}%</p>
-        </div>
-        <div>
-          <p className="font-medium">Finalizados</p>
-          <p className="text-2xl">{data.finalizados || '-'}</p>
-          <p className="text-sm text-gray-500">{calculatePercentage(data.finalizados)}%</p>
-        </div>
-      </div>
-
-      <div className="mt-4">
-        <p className="font-medium mb-2">Distribuição das Áreas</p>
-        <ProgressBar values={progressValues} />
-        <div className="flex justify-between mt-2 text-sm text-gray-600">
-          {progressValues.map((item, index) => (
-            <div key={index} className="flex items-center">
-              <div className={`w-3 h-3 rounded-full ${item.color} mr-2`}></div>
-              <span>{item.label}</span>
+      
+      <div className="grid grid-cols-1 gap-4">
+        {areaItems.map((item) => (
+          <div key={item.label} className="flex flex-col">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm text-gray-600">{item.label}</span>
+              <div className="text-right">
+                <span className="font-semibold">{ensureValidNumber(item.value)}</span>
+                <span className="text-sm text-gray-500 ml-2">({formatPercent(item.percent)})</span>
+              </div>
             </div>
-          ))}
+            <ProgressBar
+              value={item.value}
+              total={totalAreas}
+              color={item.color}
+              showLabel={false} // Adicionado para remover o label da barra
+            />
+          </div>
+        ))}
+        
+        <div className="border-t pt-4">
+          <p className="text-sm text-gray-600">Total de Áreas</p>
+          <p className="font-bold">{totalAreas}</p>
         </div>
-      </div>
-
-      <div className="mt-4">
-        <p className="font-medium">Média Hectare das Áreas</p>
-        <p className="text-2xl">{data.mediaHectaresArea?.toFixed(2) || '-'} ha</p>
       </div>
     </div>
   );
@@ -97,12 +86,22 @@ const AreasCard = ({ data, onEdit }) => {
 
 AreasCard.propTypes = {
   data: PropTypes.shape({
-    Acompanhamento: PropTypes.number,
-    aImplantar: PropTypes.number,
-    finalizados: PropTypes.number,
-    mediaHectaresArea: PropTypes.number
+    emAcompanhamento: PropTypes.number,
+    finalizadas: PropTypes.number,
+    aImplantar: PropTypes.number
   }).isRequired,
-  onEdit: PropTypes.func.isRequired
+  formatPercent: PropTypes.func.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  disabled: PropTypes.bool
+};
+
+AreasCard.defaultProps = {
+  data: {
+    emAcompanhamento: 0,
+    finalizadas: 0,
+    aImplantar: 0
+  },
+  disabled: false
 };
 
 export default AreasCard;
