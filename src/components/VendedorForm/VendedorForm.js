@@ -20,7 +20,7 @@ const VendedorForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
         setFormData(prev => ({ ...prev, regional: '' }));
       }
     }
-  }, [formData.businessUnit]);
+  }, [formData.businessUnit, formData.regional]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;

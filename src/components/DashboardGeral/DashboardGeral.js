@@ -1,6 +1,6 @@
 console.log('DashboardGeral loaded');
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getDatabase, ref, get } from 'firebase/database';
 import { toast, ToastContainer } from 'react-toastify';
