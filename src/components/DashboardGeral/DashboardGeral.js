@@ -17,37 +17,137 @@ function DashboardGeral() {
   const auth = getAuth();
   const db = getDatabase();
 
+  const toastConfig = {
+    position: "top-right",
+    autoClose: 3000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+    progress: undefined,
+  };
+
   const calcularTotalVendido = useCallback((produtos) => {
     if (!produtos || !Array.isArray(produtos)) return 0;
-    return produtos.reduce((acc, p) => acc + (Number(p.valorVendido) || 0), 0);
+    // Adicionar log para debug dos produtos
+    console.log('Calculando total vendido para produtos:', produtos);
+    const total = produtos.reduce((acc, p) => {
+      const valor = Number(p.valorVendido) || 0;
+      console.log(`Produto - Valor Vendido: ${valor}`);
+      return acc + valor;
+    }, 0);
+    console.log('Total vendido calculado:', total);
+    return total;
   }, []);
 
   const calcularTotalBonificado = useCallback((produtos) => {
     if (!produtos || !Array.isArray(produtos)) return 0;
-    return produtos.reduce((acc, p) => acc + (Number(p.valorBonificado) || 0), 0);
+    // Adicionar log para debug dos produtos
+    console.log('Calculando total bonificado para produtos:', produtos);
+    const total = produtos.reduce((acc, p) => {
+      const valor = Number(p.valorBonificado) || 0;
+      console.log(`Produto - Valor Bonificado: ${valor}`);
+      return acc + valor;
+    }, 0);
+    console.log('Total bonificado calculado:', total);
+    return total;
   }, []);
 
   const calcularTotalAreas = useCallback((areas) => {
     if (!areas) return 0;
-    return (Number(areas.emAcompanhamento) || 0) + (Number(areas.aImplantar) || 0);
+    
+    // Normaliza os campos que podem ter nomes diferentes
+    const emAcompanhamento = 
+      Number(areas.emAcompanhamento) || 
+      Number(areas.Acompanhamento) || 
+      Number(areas.acompanhamento) || 0;
+    
+    const aImplantar = Number(areas.aImplantar) || 0;
+    const finalizados = Number(areas.finalizados) || 0;
+    
+    return emAcompanhamento + aImplantar + finalizados;
   }, []);
 
   const fetchVendedoresData = useCallback(async () => {
+    console.log('Iniciando fetchVendedoresData');
     const vendedoresRef = ref(db, 'users');
     const snapshot = await get(vendedoresRef);
     if (snapshot.exists()) {
       const vendedoresData = snapshot.val();
-      const vendedoresList = Object.entries(vendedoresData).map(([id, data]) => ({
-        id,
-        ...data.vendedorInfo,
-        totalVendido: calcularTotalVendido(data.produtos),
-        totalBonificado: calcularTotalBonificado(data.produtos),
-        totalAreas: calcularTotalAreas(data.areas)
-      }));
+      let vendedoresList = Object.entries(vendedoresData).map(([id, data]) => {
+        // Log para debug dos dados do vendedor
+        console.log(`\nProcessando vendedor ${id}:`, {
+          produtos: data.produtos,
+          areas: data.areas
+        });
+
+        const totalVendido = calcularTotalVendido(data.produtos);
+        const totalBonificado = calcularTotalBonificado(data.produtos);
+
+        // Log dos totais calculados
+        console.log(`Totais do vendedor ${id}:`, {
+          totalVendido,
+          totalBonificado
+        });
+
+        // ...resto do processamento de áreas...
+        const areas = data.areas || {};
+        const totalAreas = calcularTotalAreas(areas);
+
+        return {
+          id,
+          ...data.vendedorInfo,
+          totalVendido,
+          totalBonificado,
+          totalAreas,
+          // Manter os campos individuais de áreas...
+          areasEmAcompanhamento: Number(areas.emAcompanhamento) || Number(areas.Acompanhamento) || 0,
+          areasAImplantar: Number(areas.aImplantar) || 0,
+          areasFinalizados: Number(areas.finalizados) || 0
+        };
+      });
+
+      // Nova lógica de ordenação com múltiplos critérios
+      vendedoresList = vendedoresList
+        .sort((a, b) => {
+          // Primeiro critério: total de áreas (decrescente)
+          if (b.totalAreas !== a.totalAreas) {
+            return b.totalAreas - a.totalAreas;
+          }
+          
+          // Segundo critério: valor vendido (decrescente)
+          if (b.totalVendido !== a.totalVendido) {
+            return b.totalVendido - a.totalVendido;
+          }
+          
+          // Terceiro critério: valor bonificado (decrescente)
+          return b.totalBonificado - a.totalBonificado;
+        })
+        .map((vendedor, index) => ({
+          ...vendedor,
+          ranking: index + 1
+        }));
+
+      // Log da lista final processada
+      console.log('Lista final de vendedores processada:', 
+        vendedoresList.map(v => ({
+          id: v.id,
+          nome: v.nome,
+          totalVendido: v.totalVendido,
+          totalBonificado: v.totalBonificado,
+          totalAreas: v.totalAreas
+        }))
+      );
       
       setVendedores(vendedoresList);
-      setTotalVendas(vendedoresList.reduce((acc, v) => acc + (v.totalVendido || 0) + (v.totalBonificado || 0), 0));
-      setTotalAreas(vendedoresList.reduce((acc, v) => acc + (v.totalAreas || 0), 0));
+      
+      const novoTotalVendas = vendedoresList.reduce((acc, v) => acc + v.totalVendido + v.totalBonificado, 0);
+      console.log('Novo total geral de vendas:', novoTotalVendas);
+      setTotalVendas(novoTotalVendas);
+      
+      const novoTotalAreas = vendedoresList.reduce((acc, v) => acc + v.totalAreas, 0);
+      console.log('Novo total de áreas:', novoTotalAreas);
+      setTotalAreas(novoTotalAreas);
     }
   }, [db, calcularTotalVendido, calcularTotalBonificado, calcularTotalAreas]);
 
@@ -102,15 +202,35 @@ function DashboardGeral() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <ToastContainer />
+          <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Dashboard Geral</h1>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Logout
-        </button>
+        <div className="flex gap-4">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Voltar
+          </button>
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
@@ -140,6 +260,7 @@ function DashboardGeral() {
         <table className="min-w-full bg-white">
           <thead className="bg-gray-800 text-white">
             <tr>
+              <th className="py-2 px-4 text-center">Ranking GD</th>
               <th className="py-2 px-4 text-left">Nome</th>
               <th className="py-2 px-4 text-left">Regional</th>
               <th className="py-2 px-4 text-left">Business Unit</th>
@@ -152,6 +273,9 @@ function DashboardGeral() {
           <tbody className="text-gray-700">
             {vendedores.map((vendedor) => (
               <tr key={vendedor.id} className="border-b hover:bg-gray-100">
+                <td className="py-2 px-4 text-center font-bold">
+                  {vendedor.ranking}º
+                </td>
                 <td className="py-2 px-4">{vendedor.nome}</td>
                 <td className="py-2 px-4">{vendedor.regional}</td>
                 <td className="py-2 px-4">{vendedor.businessUnit}</td>
