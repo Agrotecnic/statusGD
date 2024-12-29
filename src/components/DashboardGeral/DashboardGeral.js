@@ -5,6 +5,7 @@ import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { getDatabase, ref, get } from 'firebase/database';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import LoadingDashboard from '../LoadingDashboard/LoadingDashboard';
 
 function DashboardGeral() {
   console.log('DashboardGeral renderizando');
@@ -69,85 +70,108 @@ function DashboardGeral() {
   }, []);
 
   const fetchVendedoresData = useCallback(async () => {
-    console.log('Iniciando fetchVendedoresData');
-    const vendedoresRef = ref(db, 'users');
-    const snapshot = await get(vendedoresRef);
-    if (snapshot.exists()) {
-      const vendedoresData = snapshot.val();
-      let vendedoresList = Object.entries(vendedoresData).map(([id, data]) => {
-        // Log para debug dos dados do vendedor
-        console.log(`\nProcessando vendedor ${id}:`, {
-          produtos: data.produtos,
-          areas: data.areas
-        });
-
-        const totalVendido = calcularTotalVendido(data.produtos);
-        const totalBonificado = calcularTotalBonificado(data.produtos);
-
-        // Log dos totais calculados
-        console.log(`Totais do vendedor ${id}:`, {
-          totalVendido,
-          totalBonificado
-        });
-
-        // ...resto do processamento de áreas...
-        const areas = data.areas || {};
-        const totalAreas = calcularTotalAreas(areas);
-
-        return {
-          id,
-          ...data.vendedorInfo,
-          totalVendido,
-          totalBonificado,
-          totalAreas,
-          // Manter os campos individuais de áreas...
-          areasEmAcompanhamento: Number(areas.emAcompanhamento) || Number(areas.Acompanhamento) || 0,
-          areasAImplantar: Number(areas.aImplantar) || 0,
-          areasFinalizados: Number(areas.finalizados) || 0
-        };
+    try {
+      console.log('Iniciando fetchVendedoresData');
+      setLoading(true); // Usar o estado loading existente
+      toast.info('Carregando dados dos vendedores...', {
+        autoClose: false,
+        toastId: 'loadingData'
       });
 
-      // Nova lógica de ordenação com múltiplos critérios
-      vendedoresList = vendedoresList
-        .sort((a, b) => {
-          // Primeiro critério: total de áreas (decrescente)
-          if (b.totalAreas !== a.totalAreas) {
-            return b.totalAreas - a.totalAreas;
-          }
-          
-          // Segundo critério: valor vendido (decrescente)
-          if (b.totalVendido !== a.totalVendido) {
-            return b.totalVendido - a.totalVendido;
-          }
-          
-          // Terceiro critério: valor bonificado (decrescente)
-          return b.totalBonificado - a.totalBonificado;
-        })
-        .map((vendedor, index) => ({
-          ...vendedor,
-          ranking: index + 1
-        }));
+      const vendedoresRef = ref(db, 'users');
+      const snapshot = await get(vendedoresRef);
+      
+      if (snapshot.exists()) {
+        const vendedoresData = snapshot.val();
+        let vendedoresList = Object.entries(vendedoresData).map(([id, data]) => {
+          // Log para debug dos dados do vendedor
+          console.log(`\nProcessando vendedor ${id}:`, {
+            produtos: data.produtos,
+            areas: data.areas
+          });
 
-      // Log da lista final processada
-      console.log('Lista final de vendedores processada:', 
-        vendedoresList.map(v => ({
-          id: v.id,
-          nome: v.nome,
-          totalVendido: v.totalVendido,
-          totalBonificado: v.totalBonificado,
-          totalAreas: v.totalAreas
-        }))
-      );
-      
-      setVendedores(vendedoresList);
-      
-      const novoTotalVendas = vendedoresList.reduce((acc, v) => acc + v.totalVendido + v.totalBonificado, 0);
-      console.log('Novo total geral de vendas:', novoTotalVendas);
-      setTotalVendas(novoTotalVendas);
-      
-      const novoTotalAreas = vendedoresList.reduce((acc, v) => acc + v.totalAreas, 0);
-      console.log('Novo total de áreas:', novoTotalAreas);
-      setTotalAreas(novoTotalAreas);
+          const totalVendido = calcularTotalVendido(data.produtos);
+          const totalBonificado = calcularTotalBonificado(data.produtos);
+
+          // Log dos totais calculados
+          console.log(`Totais do vendedor ${id}:`, {
+            totalVendido,
+            totalBonificado
+          });
+
+          // ...resto do processamento de áreas...
+          const areas = data.areas || {};
+          const totalAreas = calcularTotalAreas(areas);
+
+          return {
+            id,
+            ...data.vendedorInfo,
+            totalVendido,
+            totalBonificado,
+            totalAreas,
+            // Manter os campos individuais de áreas...
+            areasEmAcompanhamento: Number(areas.emAcompanhamento) || Number(areas.Acompanhamento) || 0,
+            areasAImplantar: Number(areas.aImplantar) || 0,
+            areasFinalizados: Number(areas.finalizados) || 0
+          };
+        });
+
+        // Nova lógica de ordenação com múltiplos critérios
+        vendedoresList = vendedoresList
+          .sort((a, b) => {
+            // Primeiro critério: total de áreas (decrescente)
+            if (b.totalAreas !== a.totalAreas) {
+              return b.totalAreas - a.totalAreas;
+            }
+            
+            // Segundo critério: valor vendido (decrescente)
+            if (b.totalVendido !== a.totalVendido) {
+              return b.totalVendido - a.totalVendido;
+            }
+            
+            // Terceiro critério: valor bonificado (decrescente)
+            return b.totalBonificado - a.totalBonificado;
+          })
+          .map((vendedor, index) => ({
+            ...vendedor,
+            ranking: index + 1
+          }));
+
+        // Log da lista final processada
+        console.log('Lista final de vendedores processada:', 
+          vendedoresList.map(v => ({
+            id: v.id,
+            nome: v.nome,
+            totalVendido: v.totalVendido,
+            totalBonificado: v.totalBonificado,
+            totalAreas: v.totalAreas
+          }))
+        );
+        
+        setVendedores(vendedoresList);
+        
+        const novoTotalVendas = vendedoresList.reduce((acc, v) => acc + v.totalVendido + v.totalBonificado, 0);
+        console.log('Novo total geral de vendas:', novoTotalVendas);
+        setTotalVendas(novoTotalVendas);
+        
+        const novoTotalAreas = vendedoresList.reduce((acc, v) => acc + v.totalAreas, 0);
+        console.log('Novo total de áreas:', novoTotalAreas);
+        setTotalAreas(novoTotalAreas);
+
+        toast.dismiss('loadingData');
+        toast.success('Dados carregados com sucesso!', {
+          autoClose: 2000
+        });
+      } else {
+        toast.dismiss('loadingData');
+        toast.warn('Nenhum dado encontrado');
+      }
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      toast.dismiss('loadingData');
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setLoading(false); // Garantir que loading seja definido como false ao final
     }
   }, [db, calcularTotalVendido, calcularTotalBonificado, calcularTotalAreas]);
 
@@ -182,6 +206,31 @@ function DashboardGeral() {
     }
   }, [user, fetchVendedoresData]);
 
+  useEffect(() => {
+    const runMigration = async () => {
+      try {
+        const DataMigrationService = (await import('../../services/DataMigrationService')).default;
+        const result = await DataMigrationService.migrateUserData();
+        
+        if (result.success) {
+          if (result.message !== 'Dados já atualizados') {
+            toast.success(result.message);
+          }
+        } else {
+          console.error('Erro na migração:', result.error);
+          toast.error(`Erro ao atualizar dados: ${result.message}`);
+        }
+      } catch (error) {
+        console.error('Erro ao executar migração:', error);
+        toast.error('Erro ao conectar com o serviço de migração');
+      }
+    };
+
+    if (user?.role === 'admin') {
+      runMigration();
+    }
+  }, [user]);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -196,13 +245,14 @@ function DashboardGeral() {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
 
+  // Correção do loading
   if (loading) {
-    return <div>Carregando...</div>;
+    return <LoadingDashboard />;
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-          <ToastContainer
+      <ToastContainer
         position="top-right"
         autoClose={3000}
         hideProgressBar={false}
@@ -273,9 +323,7 @@ function DashboardGeral() {
           <tbody className="text-gray-700">
             {vendedores.map((vendedor) => (
               <tr key={vendedor.id} className="border-b hover:bg-gray-100">
-                <td className="py-2 px-4 text-center font-bold">
-                  {vendedor.ranking}º
-                </td>
+                <td className="py-2 px-4 text-center font-bold">{vendedor.ranking}º</td>
                 <td className="py-2 px-4">{vendedor.nome}</td>
                 <td className="py-2 px-4">{vendedor.regional}</td>
                 <td className="py-2 px-4">{vendedor.businessUnit}</td>
