@@ -52,7 +52,7 @@ app.use('/auth', authRoutes);
 
 // Middleware de autenticação para dashboard
 app.use('/dashboard', (req, res, next) => {
-    if (!auth.currentUser) {
+    if (!auth.currentUser && req.path !== '/geral') {
         return res.redirect('/auth/login?redirect=/dashboard');
     }
     next();

@@ -53,75 +53,49 @@ function DashboardGeral() {
       setLoading(true);
       toast.info('Carregando...', { toastId: 'loading' });
       
-      const userRef = ref(db, `users/${auth.currentUser.uid}`);
-      const userSnapshot = await get(userRef);
+      // Carregar todos os usuários diretamente
+      const vendedoresRef = ref(db, 'users');
+      const snapshot = await get(vendedoresRef);
       
-      if (!userSnapshot.exists()) {
+      if (!snapshot.exists()) {
         setVendedores([]);
+        setTotalVendas(0);
+        setTotalAreas(0);
         return;
       }
 
-      const userData = userSnapshot.val();
-      const isAdmin = userData.role === 'admin';
+      const data = snapshot.val();
+      let vendedoresList = [];
+      let totalVendas = 0;
+      let totalAreas = 0;
 
-      // Cache local para evitar recálculos
-      let vendedoresCache = new Map();
+      // Processar todos os usuários
+      Object.entries(data)
+        .filter(([_, userData]) => userData.vendedorInfo)
+        .forEach(([id, userData]) => {
+          const vendedor = {
+            id,
+            ...userData.vendedorInfo,
+            totalVendido: calcularTotalVendido(userData.produtos),
+            totalBonificado: calcularTotalBonificado(userData.produtos),
+            totalAreas: calcularTotalAreas(userData.areas)
+          };
 
-      // Listener otimizado
-      const vendedoresRef = ref(db, isAdmin ? 'users' : `users/${auth.currentUser.uid}`);
-      onValue(vendedoresRef, (snapshot) => {
-        const data = snapshot.val();
-        if (!data) {
-          setVendedores([]);
-          setTotalVendas(0);
-          setTotalAreas(0);
-          return;
-        }
+          vendedoresList.push(vendedor);
+          totalVendas += vendedor.totalVendido + vendedor.totalBonificado;
+          totalAreas += vendedor.totalAreas;
+        });
 
-        let vendedoresList = [];
-        let totalVendas = 0;
-        let totalAreas = 0;
+      // Ordenação por áreas
+      vendedoresList.sort((a, b) => b.totalAreas - a.totalAreas)
+        .forEach((v, i) => v.ranking = i + 1);
 
-        Object.entries(data)
-          .filter(([_, userData]) => userData.vendedorInfo)
-          .forEach(([id, userData]) => {
-            // Verificar cache
-            const cacheKey = `${id}-${JSON.stringify(userData)}`;
-            if (vendedoresCache.has(cacheKey)) {
-              const cachedData = vendedoresCache.get(cacheKey);
-              vendedoresList.push(cachedData);
-              totalVendas += cachedData.totalVendido + cachedData.totalBonificado;
-              totalAreas += cachedData.totalAreas;
-              return;
-            }
-
-            // Calcular apenas se não estiver em cache
-            const vendedor = {
-              id,
-              ...userData.vendedorInfo,
-              totalVendido: calcularTotalVendido(userData.produtos),
-              totalBonificado: calcularTotalBonificado(userData.produtos),
-              totalAreas: calcularTotalAreas(userData.areas)
-            };
-
-            vendedoresCache.set(cacheKey, vendedor);
-            vendedoresList.push(vendedor);
-            totalVendas += vendedor.totalVendido + vendedor.totalBonificado;
-            totalAreas += vendedor.totalAreas;
-          });
-
-        // Ordenação simplificada
-        vendedoresList.sort((a, b) => b.totalAreas - a.totalAreas)
-          .forEach((v, i) => v.ranking = i + 1);
-
-        setVendedores(vendedoresList);
-        setTotalVendas(totalVendas);
-        setTotalAreas(totalAreas);
-        
-        toast.dismiss('loading');
-      }, {
-        onlyOnce: !isAdmin // Se não for admin, carrega apenas uma vez
-      });
+      setVendedores(vendedoresList);
+      setTotalVendas(totalVendas);
+      setTotalAreas(totalAreas);
+      
+      toast.dismiss('loading');
+      toast.success('Dados carregados!');
 
     } catch (error) {
       console.error('Erro:', error);
@@ -129,7 +103,7 @@ function DashboardGeral() {
     } finally {
       setLoading(false);
     }
-  }, [db, auth.currentUser, calcularTotalVendido, calcularTotalBonificado, calcularTotalAreas]);
+  }, [db, calcularTotalVendido, calcularTotalBonificado, calcularTotalAreas]);
 
   // Adicionar listener de conexão
   useEffect(() => {
