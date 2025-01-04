@@ -2,7 +2,7 @@ console.log('DashboardGeral loaded');
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { getDatabase, ref, get } from 'firebase/database';
+import { getDatabase, ref, get, onValue, off } from 'firebase/database';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoadingDashboard from '../LoadingDashboard/LoadingDashboard';
@@ -28,152 +28,124 @@ function DashboardGeral() {
     progress: undefined,
   };
 
+  // Otimizar funções de cálculo
   const calcularTotalVendido = useCallback((produtos) => {
     if (!produtos || !Array.isArray(produtos)) return 0;
-    // Adicionar log para debug dos produtos
-    console.log('Calculando total vendido para produtos:', produtos);
-    const total = produtos.reduce((acc, p) => {
-      const valor = Number(p.valorVendido) || 0;
-      console.log(`Produto - Valor Vendido: ${valor}`);
-      return acc + valor;
-    }, 0);
-    console.log('Total vendido calculado:', total);
-    return total;
+    return produtos.reduce((acc, p) => acc + (Number(p.valorVendido) || 0), 0);
   }, []);
 
   const calcularTotalBonificado = useCallback((produtos) => {
     if (!produtos || !Array.isArray(produtos)) return 0;
-    // Adicionar log para debug dos produtos
-    console.log('Calculando total bonificado para produtos:', produtos);
-    const total = produtos.reduce((acc, p) => {
-      const valor = Number(p.valorBonificado) || 0;
-      console.log(`Produto - Valor Bonificado: ${valor}`);
-      return acc + valor;
-    }, 0);
-    console.log('Total bonificado calculado:', total);
-    return total;
+    return produtos.reduce((acc, p) => acc + (Number(p.valorBonificado) || 0), 0);
   }, []);
 
   const calcularTotalAreas = useCallback((areas) => {
     if (!areas) return 0;
-    
-    // Normaliza os campos que podem ter nomes diferentes
-    const emAcompanhamento = 
-      Number(areas.emAcompanhamento) || 
-      Number(areas.Acompanhamento) || 
-      Number(areas.acompanhamento) || 0;
-    
-    const aImplantar = Number(areas.aImplantar) || 0;
-    const finalizados = Number(areas.finalizados) || 0;
-    
-    return emAcompanhamento + aImplantar + finalizados;
+    return (
+      (Number(areas.emAcompanhamento) || Number(areas.Acompanhamento) || Number(areas.acompanhamento) || 0) +
+      (Number(areas.aImplantar) || 0) +
+      (Number(areas.finalizados) || 0)
+    );
   }, []);
 
   const fetchVendedoresData = useCallback(async () => {
     try {
-      console.log('Iniciando fetchVendedoresData');
-      setLoading(true); // Usar o estado loading existente
-      toast.info('Carregando dados dos vendedores...', {
-        autoClose: false,
-        toastId: 'loadingData'
+      setLoading(true);
+      toast.info('Carregando...', { toastId: 'loading' });
+      
+      const userRef = ref(db, `users/${auth.currentUser.uid}`);
+      const userSnapshot = await get(userRef);
+      
+      if (!userSnapshot.exists()) {
+        setVendedores([]);
+        return;
+      }
+
+      const userData = userSnapshot.val();
+      const isAdmin = userData.role === 'admin';
+
+      // Cache local para evitar recálculos
+      let vendedoresCache = new Map();
+
+      // Listener otimizado
+      const vendedoresRef = ref(db, isAdmin ? 'users' : `users/${auth.currentUser.uid}`);
+      onValue(vendedoresRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) {
+          setVendedores([]);
+          setTotalVendas(0);
+          setTotalAreas(0);
+          return;
+        }
+
+        let vendedoresList = [];
+        let totalVendas = 0;
+        let totalAreas = 0;
+
+        Object.entries(data)
+          .filter(([_, userData]) => userData.vendedorInfo)
+          .forEach(([id, userData]) => {
+            // Verificar cache
+            const cacheKey = `${id}-${JSON.stringify(userData)}`;
+            if (vendedoresCache.has(cacheKey)) {
+              const cachedData = vendedoresCache.get(cacheKey);
+              vendedoresList.push(cachedData);
+              totalVendas += cachedData.totalVendido + cachedData.totalBonificado;
+              totalAreas += cachedData.totalAreas;
+              return;
+            }
+
+            // Calcular apenas se não estiver em cache
+            const vendedor = {
+              id,
+              ...userData.vendedorInfo,
+              totalVendido: calcularTotalVendido(userData.produtos),
+              totalBonificado: calcularTotalBonificado(userData.produtos),
+              totalAreas: calcularTotalAreas(userData.areas)
+            };
+
+            vendedoresCache.set(cacheKey, vendedor);
+            vendedoresList.push(vendedor);
+            totalVendas += vendedor.totalVendido + vendedor.totalBonificado;
+            totalAreas += vendedor.totalAreas;
+          });
+
+        // Ordenação simplificada
+        vendedoresList.sort((a, b) => b.totalAreas - a.totalAreas)
+          .forEach((v, i) => v.ranking = i + 1);
+
+        setVendedores(vendedoresList);
+        setTotalVendas(totalVendas);
+        setTotalAreas(totalAreas);
+        
+        toast.dismiss('loading');
+      }, {
+        onlyOnce: !isAdmin // Se não for admin, carrega apenas uma vez
       });
 
-      const vendedoresRef = ref(db, 'users');
-      const snapshot = await get(vendedoresRef);
-      
-      if (snapshot.exists()) {
-        const vendedoresData = snapshot.val();
-        let vendedoresList = Object.entries(vendedoresData).map(([id, data]) => {
-          // Log para debug dos dados do vendedor
-          console.log(`\nProcessando vendedor ${id}:`, {
-            produtos: data.produtos,
-            areas: data.areas
-          });
-
-          const totalVendido = calcularTotalVendido(data.produtos);
-          const totalBonificado = calcularTotalBonificado(data.produtos);
-
-          // Log dos totais calculados
-          console.log(`Totais do vendedor ${id}:`, {
-            totalVendido,
-            totalBonificado
-          });
-
-          // ...resto do processamento de áreas...
-          const areas = data.areas || {};
-          const totalAreas = calcularTotalAreas(areas);
-
-          return {
-            id,
-            ...data.vendedorInfo,
-            totalVendido,
-            totalBonificado,
-            totalAreas,
-            // Manter os campos individuais de áreas...
-            areasEmAcompanhamento: Number(areas.emAcompanhamento) || Number(areas.Acompanhamento) || 0,
-            areasAImplantar: Number(areas.aImplantar) || 0,
-            areasFinalizados: Number(areas.finalizados) || 0
-          };
-        });
-
-        // Nova lógica de ordenação com múltiplos critérios
-        vendedoresList = vendedoresList
-          .sort((a, b) => {
-            // Primeiro critério: total de áreas (decrescente)
-            if (b.totalAreas !== a.totalAreas) {
-              return b.totalAreas - a.totalAreas;
-            }
-            
-            // Segundo critério: valor vendido (decrescente)
-            if (b.totalVendido !== a.totalVendido) {
-              return b.totalVendido - a.totalVendido;
-            }
-            
-            // Terceiro critério: valor bonificado (decrescente)
-            return b.totalBonificado - a.totalBonificado;
-          })
-          .map((vendedor, index) => ({
-            ...vendedor,
-            ranking: index + 1
-          }));
-
-        // Log da lista final processada
-        console.log('Lista final de vendedores processada:', 
-          vendedoresList.map(v => ({
-            id: v.id,
-            nome: v.nome,
-            totalVendido: v.totalVendido,
-            totalBonificado: v.totalBonificado,
-            totalAreas: v.totalAreas
-          }))
-        );
-        
-        setVendedores(vendedoresList);
-        
-        const novoTotalVendas = vendedoresList.reduce((acc, v) => acc + v.totalVendido + v.totalBonificado, 0);
-        console.log('Novo total geral de vendas:', novoTotalVendas);
-        setTotalVendas(novoTotalVendas);
-        
-        const novoTotalAreas = vendedoresList.reduce((acc, v) => acc + v.totalAreas, 0);
-        console.log('Novo total de áreas:', novoTotalAreas);
-        setTotalAreas(novoTotalAreas);
-
-        toast.dismiss('loadingData');
-        toast.success('Dados carregados com sucesso!', {
-          autoClose: 2000
-        });
-      } else {
-        toast.dismiss('loadingData');
-        toast.warn('Nenhum dado encontrado');
-      }
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      toast.dismiss('loadingData');
+      console.error('Erro:', error);
       toast.error('Erro ao carregar dados');
     } finally {
-      setLoading(false); // Garantir que loading seja definido como false ao final
+      setLoading(false);
     }
-  }, [db, calcularTotalVendido, calcularTotalBonificado, calcularTotalAreas]);
+  }, [db, auth.currentUser, calcularTotalVendido, calcularTotalBonificado, calcularTotalAreas]);
+
+  // Adicionar listener de conexão
+  useEffect(() => {
+    const connectedRef = ref(db, '.info/connected');
+    const unsubscribe = onValue(connectedRef, (snap) => {
+      if (!snap.val()) {
+        toast.warning('Conexão perdida. Reconectando...');
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      const vendedoresRef = ref(db, 'users');
+      off(vendedoresRef);
+    };
+  }, [db]);
 
   useEffect(() => {
     console.log('DashboardGeral - Verificando autenticação');
@@ -199,37 +171,16 @@ function DashboardGeral() {
   }, [auth, db]);
 
   useEffect(() => {
-    console.log('Usuario atual:', user);
-    if (user) {
-      console.log('Buscando dados dos vendedores...');
+    if (user && auth.currentUser) {
       fetchVendedoresData();
     }
-  }, [user, fetchVendedoresData]);
-
-  useEffect(() => {
-    const runMigration = async () => {
-      try {
-        const DataMigrationService = (await import('../../services/DataMigrationService')).default;
-        const result = await DataMigrationService.migrateUserData();
-        
-        if (result.success) {
-          if (result.message !== 'Dados já atualizados') {
-            toast.success(result.message);
-          }
-        } else {
-          console.error('Erro na migração:', result.error);
-          toast.error(`Erro ao atualizar dados: ${result.message}`);
-        }
-      } catch (error) {
-        console.error('Erro ao executar migração:', error);
-        toast.error('Erro ao conectar com o serviço de migração');
-      }
+    
+    // Limpar listener quando componente for desmontado
+    return () => {
+      const vendedoresRef = ref(db, 'users');
+      off(vendedoresRef);
     };
-
-    if (user?.role === 'admin') {
-      runMigration();
-    }
-  }, [user]);
+  }, [user, auth.currentUser, fetchVendedoresData]);
 
   const handleLogout = async () => {
     try {

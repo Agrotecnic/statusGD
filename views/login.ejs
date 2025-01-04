@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Status GD</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 360px;
+        }
+        h1 {
+            text-align: center;
+            color: #1a73e8;
+            margin-bottom: 24px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-bottom: 16px;
+        }
+        button:hover {
+            background: #1557b0;
+        }
+        .auth-links {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 14px;
+        }
+        .auth-links a {
+            color: #1a73e8;
+            text-decoration: none;
+            margin: 0 8px;
+        }
+        .auth-links a:hover {
+            text-decoration: underline;
+        }
+        .error-message {
+            color: #d93025;
+            background: #fce8e6;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .success-message {
+            color: #0b8043;
+            background: #e6f4ea;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Status GD</h1>
+        <% if (success) { %>
+            <div class="success-message"><%= success %></div>
+        <% } %>
+        <% if (error) { %>
+            <div class="error-message"><%= error %></div>
+        <% } %>
+        <form action="/auth/login" method="POST">
+            <div class="form-group">
+                <input type="email" name="email" placeholder="Email" required value="<%= email %>">
+            </div>
+            <div class="form-group">
+                <input type="password" name="password" placeholder="Senha" required>
+            </div>
+            <button type="submit">Entrar</button>
+        </form>
+        <div class="auth-links">
+            <a href="/auth/forgot-password">Esqueceu sua senha?</a>
+            <span>|</span>
+            <a href="/auth/register">Criar conta</a>
+        </div>
+    </div>
+</body>
+</html>

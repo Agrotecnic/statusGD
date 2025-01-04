@@ -1,0 +1,5 @@
+
+{
+  "rootDir": ".",
+  "config": "./jest.config.js"
+}

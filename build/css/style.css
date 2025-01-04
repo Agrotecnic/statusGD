@@ -1,0 +1,26 @@
+:root {
+    --primary-color: #1a73e8;
+    --hover-color: #1557b0;
+    --error-color: #d93025;
+    --success-color: #0b8043;
+    --background-color: #f0f2f5;
+    --text-color: #333;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 400px;
+    margin: 40px auto;
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ...other styles... */
