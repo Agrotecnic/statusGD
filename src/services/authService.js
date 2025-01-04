@@ -37,17 +37,27 @@ export const logout = async () => {
   }
 };
 
-export const hasPermission = (permission, level) => {
-  const permissionMap = {
-    'dashboard': {
-      'view': true,
-      'edit': false
-    },
-    'users': {
-      'view': false,
-      'edit': false
-    }
-  };
+export const permissionMap = {
+  'dashboard': {
+    'view': true,
+    'edit': true
+  },
+  'dashboardGeral': {
+    'view': true, // Alterado para permitir visualização para todos
+    'edit': (role) => role === 'admin'
+  },
+  'users': {
+    'view': (role) => role === 'admin',
+    'edit': (role) => role === 'admin'
+  }
+};
+
+export const hasPermission = (permission, level, role) => {
+  const permissionConfig = permissionMap[permission]?.[level];
   
-  return permissionMap[permission]?.[level] || false;
+  if (typeof permissionConfig === 'function') {
+    return permissionConfig(role);
+  }
+  
+  return permissionConfig || false;
 };

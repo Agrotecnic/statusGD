@@ -11,7 +11,6 @@ import ProdutosTable from '../ProdutosTable/ProdutosTable';
 import ImageUploader from '../ImageUploader/ImageUploader';
 
 const DashboardContent = ({
-  user,
   vendedorInfo,
   areas,
   produtos,
@@ -28,7 +27,8 @@ const DashboardContent = ({
   formatPercent,
 }) => {
   const navigate = useNavigate();
-  const isAdmin = user?.role === 'admin';
+  // Remover variável não utilizada
+  // const isAdmin = user?.role === 'admin';
 
   // Adicione normalização quando receber os dados
   const normalizedVendedorInfo = {
@@ -94,14 +94,12 @@ const DashboardContent = ({
             >
               Exportar PDF
             </button>
-            {isAdmin && (
-              <button
-                onClick={() => navigate('/dashboard-geral')}
-                className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
-              >
-                Dashboard Geral
-              </button>
-            )}
+            <button
+              onClick={() => navigate('/dashboard-geral')}
+              className="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600"
+            >
+              Dashboard Geral
+            </button>
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
@@ -207,9 +205,6 @@ const DashboardContent = ({
 };
 
 DashboardContent.propTypes = {
-  user: PropTypes.shape({
-    role: PropTypes.string
-  }),
   vendedorInfo: PropTypes.shape({
     nome: PropTypes.string,
     regional: PropTypes.string,

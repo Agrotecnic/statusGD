@@ -1,32 +1,23 @@
 console.log('DashboardGeral loaded');
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
-import { getDatabase, ref, get, onValue, off } from 'firebase/database';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { ref, get, onValue, off } from 'firebase/database';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import LoadingDashboard from '../LoadingDashboard/LoadingDashboard';
+import { hasPermission } from '../../services/authService';
+import { auth, db } from '../../config/firebase';
 
 function DashboardGeral() {
   console.log('DashboardGeral renderizando');
   const [user, setUser] = useState(null);
+  const [canEdit, setCanEdit] = useState(false);
   const [loading, setLoading] = useState(true);
   const [vendedores, setVendedores] = useState([]);
   const [totalVendas, setTotalVendas] = useState(0);
   const [totalAreas, setTotalAreas] = useState(0);
   const navigate = useNavigate();
-  const auth = getAuth();
-  const db = getDatabase();
-
-  const toastConfig = {
-    position: "top-right",
-    autoClose: 3000,
-    hideProgressBar: false,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-    progress: undefined,
-  };
 
   // Otimizar funções de cálculo
   const calcularTotalVendido = useCallback((produtos) => {
@@ -71,7 +62,7 @@ function DashboardGeral() {
 
       // Processar todos os usuários
       Object.entries(data)
-        .filter(([_, userData]) => userData.vendedorInfo)
+        .filter(([, userData]) => userData.vendedorInfo)
         .forEach(([id, userData]) => {
           const vendedor = {
             id,
@@ -103,7 +94,7 @@ function DashboardGeral() {
     } finally {
       setLoading(false);
     }
-  }, [db, calcularTotalVendido, calcularTotalBonificado, calcularTotalAreas]);
+  }, [calcularTotalVendido, calcularTotalBonificado, calcularTotalAreas]);
 
   // Adicionar listener de conexão
   useEffect(() => {
@@ -119,7 +110,7 @@ function DashboardGeral() {
       const vendedoresRef = ref(db, 'users');
       off(vendedoresRef);
     };
-  }, [db]);
+  }, []);
 
   useEffect(() => {
     console.log('DashboardGeral - Verificando autenticação');
@@ -128,24 +119,23 @@ function DashboardGeral() {
       if (currentUser) {
         const userRef = ref(db, `users/${currentUser.uid}`);
         const snapshot = await get(userRef);
-        if (snapshot.exists()) {
-          const userData = snapshot.val();
-          console.log('Dados do usuário:', userData);
-          setUser({ ...currentUser, role: userData.role });
-        } else {
-          setUser(currentUser);
-        }
+        const userData = snapshot.exists() ? snapshot.val() : {};
+        const userRole = userData.role || 'user';
+        
+        setUser({ ...currentUser, role: userRole });
+        setCanEdit(hasPermission('dashboardGeral', 'edit', userRole));
       } else {
         setUser(null);
+        setCanEdit(false);
       }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [auth, db]);
+  }, []);
 
   useEffect(() => {
-    if (user && auth.currentUser) {
+    if (user) {
       fetchVendedoresData();
     }
     
@@ -154,7 +144,7 @@ function DashboardGeral() {
       const vendedoresRef = ref(db, 'users');
       off(vendedoresRef);
     };
-  }, [user, auth.currentUser, fetchVendedoresData]);
+  }, [user, fetchVendedoresData]);
 
   const handleLogout = async () => {
     try {
@@ -169,6 +159,12 @@ function DashboardGeral() {
   const formatMoney = (value) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
+
+  const handleEdit = useCallback(() => {
+    if (!canEdit) return;
+    toast.info('Funcionalidade em desenvolvimento');
+    // Implementar lógica de edição aqui
+  }, [canEdit]);
 
   // Correção do loading
   if (loading) {
@@ -193,6 +189,14 @@ function DashboardGeral() {
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Dashboard Geral</h1>
         <div className="flex gap-4">
+          {canEdit && (
+            <button
+              onClick={() => handleEdit()}
+              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Editar Dados
+            </button>
+          )}
           <button
             onClick={() => navigate('/dashboard')}
             className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
