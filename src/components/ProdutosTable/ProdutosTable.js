@@ -6,9 +6,9 @@ const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
     <div className="overflow-x-auto">
       <table className="min-w-full bg-white">
         <thead className="bg-gray-800 text-white">
-          <tr>{/* Remova espaços em branco entre as tags */}
+          <tr>
             <th className="py-2 px-4 text-left">Nome</th>
-            <th className="py-2 px-4 border-b">Cliente</th> {/* Nova coluna */}
+            <th className="py-2 px-4 border-b">Cliente</th> 
             <th className="py-2 px-4 text-right">Valor Vendido</th>
             <th className="py-2 px-4 border-b">Valor Bonificado</th>
             <th className="py-2 px-4 border-b">Áreas</th>
@@ -17,9 +17,9 @@ const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
         </thead>
         <tbody className="text-gray-700">
           {produtos.map((produto, index) => (
-            <tr key={index}>{/* Remova espaços em branco entre as tags */}
+            <tr key={index}>
               <td className="py-2 px-4">{produto.nome}</td>
-              <td className="py-2 px-4 border-b">{produto.cliente || '-'}</td> {/* Nova coluna */}
+              <td className="py-2 px-4 border-b">{produto.cliente || '-'}</td> 
               <td className="py-2 px-4 text-right">{formatMoney(produto.valorVendido)}</td>
               <td className="py-2 px-4 border-b">{formatMoney(produto.valorBonificado)}</td>
               <td className="py-2 px-4 border-b">{produto.areas}</td>

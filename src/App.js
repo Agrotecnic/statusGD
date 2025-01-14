@@ -9,7 +9,6 @@ import 'react-toastify/dist/ReactToastify.css';
 
 // Componentes
 import SignUp from './components/SignUp/SignUp';
-import Modal from './components/Modal/Modal';
 import VendedorForm from './components/VendedorForm/VendedorForm';
 import AreaForm from './components/AreaForm/AreaForm';
 import ProdutoForm from './components/ProdutoForm/ProdutoForm';
@@ -17,7 +16,8 @@ import LoadingSpinner from './components/LoadingSpinner/LoadingSpinner';
 import ErrorBoundary from './components/ErrorBoundary/ErrorBoundary';
 import DashboardContent from './components/DashboardContent/DashboardContent';
 import DashboardGeral from './components/DashboardGeral/DashboardGeral';
-
+import PasswordResetForm from './components/PasswordResetForm/PasswordResetForm'; // Componente de Reset de Senha
+import Modal from './components/Modal/Modal'; // Componente Modal
 import './styles/print.css';
 
 // Remover importações do Firebase
@@ -32,17 +32,20 @@ function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  
+
   // UI states
   const [loading, setLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [error, setError] = useState(null);
   const [editingSection, setEditingSection] = useState(null);
   const [editingItem, setEditingItem] = useState(null);
+  const [isPasswordResetOpen, setPasswordResetOpen] = useState(false); // Modal de redefinição de senha
+  const openPasswordResetModal = () => setPasswordResetOpen(true);  // Abre o modal
+  const closePasswordResetModal = () => setPasswordResetOpen(false); // Fecha o modal
 
   // Navigation
   const navigate = useNavigate();
-  
+
   // Data states
   const [images, setImages] = useState({
     area1: null,
@@ -50,14 +53,14 @@ function App() {
     area3: null,
     area4: null
   });
-  
+
   const [vendedorInfo, setVendedorInfo] = useState({
     nome: "",
     regional: "",
     businessUnit: "",
     dataAtualizacao: ""
   });
-  
+
   const [areas, setAreas] = useState({
     emAcompanhamento: 0,
     aImplantar: 0,
@@ -65,9 +68,9 @@ function App() {
     mediaHectaresArea: 0,
     areaPotencialTotal: 0
   });
-  
+
   const [produtos, setProdutos] = useState([]);
-// Utility functions
+  // Utility functions
   const showToast = useCallback((message, type = 'info') => {
     toast[type](message, {
       position: "top-right",
@@ -93,101 +96,101 @@ function App() {
   }, []);
 
   // Calculated data usando useMemo
-const calculatedData = useMemo(() => {
-  const getNumericValue = (value) => {
-    if (value === null || value === undefined) return 0;
-    const numValue = parseFloat(value);
-    return isNaN(numValue) ? 0 : numValue;
-  };
+  const calculatedData = useMemo(() => {
+    const getNumericValue = (value) => {
+      if (value === null || value === undefined) return 0;
+      const numValue = parseFloat(value);
+      return isNaN(numValue) ? 0 : numValue;
+    };
 
-  console.log('CalculatedData - Estado das Áreas:', areas);
-  
-  // Calcula o total de áreas somando todas as categorias
-  const totalAreas = 
-    getNumericValue(areas.emAcompanhamento) + 
-    getNumericValue(areas.aImplantar) + 
-    getNumericValue(areas.finalizados);
+    console.log('CalculatedData - Estado das Áreas:', areas);
 
-  console.log('CalculatedData - Total de Áreas:', {
-    emAcompanhamento: getNumericValue(areas.emAcompanhamento),
-    aImplantar: getNumericValue(areas.aImplantar),
-    finalizados: getNumericValue(areas.finalizados),
-    totalAreas
-  });
+    // Calcula o total de áreas somando todas as categorias
+    const totalAreas =
+      getNumericValue(areas.emAcompanhamento) +
+      getNumericValue(areas.aImplantar) +
+      getNumericValue(areas.finalizados);
 
-  const mediaHectaresArea = getNumericValue(areas.mediaHectaresArea);
-  const totalHectares = totalAreas * mediaHectaresArea;
-
-  console.log('CalculatedData - Cálculo de Hectares:', {
-    totalAreas,
-    mediaHectaresArea,
-    totalHectares
-  });
-
-  // Cálculos financeiros
-  const totalVendido = produtos.reduce((acc, prod) => {
-    const valorVendido = getNumericValue(prod.valorVendido);
-    console.log('Valor vendido produto:', valorVendido);
-    return acc + valorVendido;
-  }, 0);
-
-  const totalBonificado = produtos.reduce((acc, prod) => {
-    const valorBonificado = getNumericValue(prod.valorBonificado);
-    console.log('Valor bonificado produto:', valorBonificado);
-    return acc + valorBonificado;
-  }, 0);
-
-  const totalGeral = totalVendido + totalBonificado;
-
-  console.log('CalculatedData - Valores Financeiros:', {
-    totalVendido,
-    totalBonificado,
-    totalGeral
-  });
-  
-  // Cálculo do valor médio por hectare e potencial
-  const valorMedioHectare = totalHectares > 0 ? totalGeral / totalHectares : 0;
-  const areaPotencialTotal = getNumericValue(areas.areaPotencialTotal);
-  const potencialVendasTotal = areaPotencialTotal * valorMedioHectare;
-
-  console.log('CalculatedData - Métricas Finais:', {
-    valorMedioHectare,
-    areaPotencialTotal,
-    potencialVendasTotal
-  });
-
-  const resultados = {
-    totalAreas,
-    totalHectares,
-    mediaHectaresArea,
-    valorMedioHectare,
-    potencialVendasTotal,
-    totalVendido,
-    totalBonificado,
-    totalGeral,
-    areaPotencialTotal,
-    areasDistribuicao: {
+    console.log('CalculatedData - Total de Áreas:', {
       emAcompanhamento: getNumericValue(areas.emAcompanhamento),
       aImplantar: getNumericValue(areas.aImplantar),
-      finalizados: getNumericValue(areas.finalizados)
-    }
-  };
+      finalizados: getNumericValue(areas.finalizados),
+      totalAreas
+    });
 
-  console.log('CalculatedData - Resultado Final:', resultados);
+    const mediaHectaresArea = getNumericValue(areas.mediaHectaresArea);
+    const totalHectares = totalAreas * mediaHectaresArea;
 
-  return resultados;
-}, [produtos, areas]);
-// Fetch user data function
+    console.log('CalculatedData - Cálculo de Hectares:', {
+      totalAreas,
+      mediaHectaresArea,
+      totalHectares
+    });
+
+    // Cálculos financeiros
+    const totalVendido = produtos.reduce((acc, prod) => {
+      const valorVendido = getNumericValue(prod.valorVendido);
+      console.log('Valor vendido produto:', valorVendido);
+      return acc + valorVendido;
+    }, 0);
+
+    const totalBonificado = produtos.reduce((acc, prod) => {
+      const valorBonificado = getNumericValue(prod.valorBonificado);
+      console.log('Valor bonificado produto:', valorBonificado);
+      return acc + valorBonificado;
+    }, 0);
+
+    const totalGeral = totalVendido + totalBonificado;
+
+    console.log('CalculatedData - Valores Financeiros:', {
+      totalVendido,
+      totalBonificado,
+      totalGeral
+    });
+
+    // Cálculo do valor médio por hectare e potencial
+    const valorMedioHectare = totalHectares > 0 ? totalGeral / totalHectares : 0;
+    const areaPotencialTotal = getNumericValue(areas.areaPotencialTotal);
+    const potencialVendasTotal = areaPotencialTotal * valorMedioHectare;
+
+    console.log('CalculatedData - Métricas Finais:', {
+      valorMedioHectare,
+      areaPotencialTotal,
+      potencialVendasTotal
+    });
+
+    const resultados = {
+      totalAreas,
+      totalHectares,
+      mediaHectaresArea,
+      valorMedioHectare,
+      potencialVendasTotal,
+      totalVendido,
+      totalBonificado,
+      totalGeral,
+      areaPotencialTotal,
+      areasDistribuicao: {
+        emAcompanhamento: getNumericValue(areas.emAcompanhamento),
+        aImplantar: getNumericValue(areas.aImplantar),
+        finalizados: getNumericValue(areas.finalizados)
+      }
+    };
+
+    console.log('CalculatedData - Resultado Final:', resultados);
+
+    return resultados;
+  }, [produtos, areas]);
+  // Fetch user data function
   const fetchUserData = useCallback(async (uid) => {
     try {
       setLoading(true);
       const userRef = ref(db, `users/${uid}`);
       const snapshot = await get(userRef);
-      
+
       if (snapshot.exists()) {
         const data = snapshot.val();
         setVendedorInfo(data.vendedorInfo || {});
-        
+
         // Garante que todos os campos necessários existam
         const areasData = data.areas || {};
         setAreas({
@@ -197,7 +200,7 @@ const calculatedData = useMemo(() => {
           mediaHectaresArea: Number(areasData.mediaHectaresArea || 0),
           areaPotencialTotal: Number(areasData.areaPotencialTotal || 0)
         });
-        
+
         setProdutos(data.produtos || []);
         setImages(data.images || {});
         showToast('Dados carregados com sucesso', 'success');
@@ -217,7 +220,7 @@ const calculatedData = useMemo(() => {
       showToast('Usuário não autenticado', 'error');
       return;
     }
-    
+
     try {
       setLoading(true);
       const userRef = ref(db, `users/${user.uid}`);
@@ -238,43 +241,64 @@ const calculatedData = useMemo(() => {
       setLoading(false);
     }
   }, [user, vendedorInfo, areas, produtos, images, showToast]);
-// Authentication functions
+  // Authentication functions
   const handleLogin = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    
+
+
     try {
+      // Autenticação do usuário
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const userRef = ref(db, `users/${userCredential.user.uid}`);
       const snapshot = await get(userRef);
-      
+
       if (snapshot.exists()) {
         const userData = snapshot.val();
-        setUser({ 
-          ...userCredential.user, 
+        setUser({
+          ...userCredential.user,
           role: userData.role || 'user'
         });
       } else {
-        setUser({ 
-          ...userCredential.user, 
+        setUser({
+          ...userCredential.user,
           role: 'user'
         });
       }
-      
+
       showToast('Login realizado com sucesso', 'success');
       navigate('/dashboard');
     } catch (error) {
-      const errorMessage = 
-        error.code === 'auth/wrong-password' ? 'Senha incorreta' :
-        error.code === 'auth/user-not-found' ? 'Usuário não encontrado' :
-        error.code === 'auth/invalid-email' ? 'Email inválido' :
-        'Erro ao fazer login';
-      
+      let errorMessage = 'Erro ao fazer login';
+
+      // Tratamento de erro específico baseado no código
+      switch (error.code) {
+        case 'auth/wrong-password':
+          errorMessage = 'Senha incorreta';
+          break;
+        case 'auth/user-not-found':
+          errorMessage = 'Usuário não encontrado';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Email inválido';
+          break;
+        default:
+          console.log('Erro no login:', error);
+          console.log('Código do erro:', error.code);
+          console.log('Mensagem do erro:', error.message);
+          console.log(auth.currentUser);
+          console.log(user);
+          console.log(email);
+          console.log(password);
+          errorMessage = 'Erro desconhecido';
+          break;
+      }
+
       setError(errorMessage);
       showToast(errorMessage, 'error');
     } finally {
-      setLoading(false);
+      setLoading(false); // Finaliza o carregamento
     }
   };
 
@@ -305,7 +329,7 @@ const calculatedData = useMemo(() => {
       setLoading(false);
     }
   };
-// Event handlers
+  // Event handlers
   const handleEditStart = useCallback((type, data) => {
     if (type === "produto") {
       setEditingItem(data.index);
@@ -348,9 +372,9 @@ const calculatedData = useMemo(() => {
         aImplantar: Number(data.aImplantar) || 0,
         finalizados: Number(data.finalizados) || 0  // Mantendo a versão mais recente
       };
-      
+
       console.log('Atualizando áreas:', formattedData);
-      
+
       setAreas(formattedData);
       await saveData();
       setEditingSection(null);
@@ -372,7 +396,7 @@ const calculatedData = useMemo(() => {
         valorBonificado: Number(data.valorBonificado) || 0,
         areas: Number(data.areas) || 0
       };
-      
+
       const newProdutos = [...produtos];
       newProdutos[index] = formattedData;
       setProdutos(newProdutos);
@@ -442,7 +466,7 @@ const calculatedData = useMemo(() => {
       }
     };
   }, [saveData, showToast]);
-// Export functions
+  // Export functions
   const exportToExcel = useCallback(async () => {
     if (!produtos.length) {
       showToast('Não há dados para exportar', 'warning');
@@ -453,12 +477,12 @@ const calculatedData = useMemo(() => {
       setLoading(true);
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Produtos');
-    
+
       // Add headers with formatting
       worksheet.addRow(['Produto', 'Cliente', 'Valor Vendido', 'Valor Bonificado', 'Áreas', 'Total']);
       worksheet.getRow(1).font = { bold: true };
       worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
-      
+
       // Add data rows
       produtos.forEach(produto => {
         worksheet.addRow([
@@ -470,12 +494,12 @@ const calculatedData = useMemo(() => {
           (produto.valorVendido || 0) + (produto.valorBonificado || 0)
         ]);
       });
-    
+
       // Format currency columns
       worksheet.getColumn(3).numFmt = '"R$"#,##0.00';
       worksheet.getColumn(4).numFmt = '"R$"#,##0.00';
       worksheet.getColumn(6).numFmt = '"R$"#,##0.00';
-    
+
       // Auto-adjust column widths
       worksheet.columns.forEach(column => {
         column.width = Math.max(12, ...worksheet.getColumn(column.number).values.map(v => String(v).length));
@@ -486,16 +510,16 @@ const calculatedData = useMemo(() => {
       worksheet.addRow([
         'TOTAL',
         '',
-        `=SUM(C2:C${lastRow-1})`,
-        `=SUM(D2:D${lastRow-1})`,
-        `=SUM(E2:E${lastRow-1})`,
-        `=SUM(F2:F${lastRow-1})`
+        `=SUM(C2:C${lastRow - 1})`,
+        `=SUM(D2:D${lastRow - 1})`,
+        `=SUM(E2:E${lastRow - 1})`,
+        `=SUM(F2:F${lastRow - 1})`
       ]);
       worksheet.getRow(lastRow).font = { bold: true };
-    
+
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { 
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       });
       saveAs(blob, `relatorio_${vendedorInfo.nome || 'vendedor'}_${new Date().toISOString()}.xlsx`);
       showToast('Relatório Excel exportado com sucesso', 'success');
@@ -511,15 +535,15 @@ const calculatedData = useMemo(() => {
     try {
       setIsExporting(true);
       setLoading(true);
-      
+  
       // Wait for state updates to reflect in the DOM
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+  
       const input = document.getElementById('dashboard');
       if (!input) {
         throw new Error('Elemento do dashboard não encontrado');
       }
-      
+  
       const canvas = await html2canvas(input, {
         scale: 2,
         useCORS: true,
@@ -533,13 +557,13 @@ const calculatedData = useMemo(() => {
           Array.from(elementsToHide).forEach(element => {
             element.style.display = 'none';
           });
-          
+  
           // Esconde todos os botões
           const buttons = clonedDoc.getElementsByTagName('button');
           Array.from(buttons).forEach(button => {
             button.style.display = 'none';
           });
-          
+  
           // Esconde última coluna da tabela (ações)
           const tableCells = clonedDoc.querySelectorAll('table th:last-child, table td:last-child');
           Array.from(tableCells).forEach(cell => {
@@ -547,26 +571,29 @@ const calculatedData = useMemo(() => {
           });
         }
       });
-      
+  
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
-    
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
+  
+      const pdfWidth = pdf.internal.pageSize.getWidth();  // Largura A4
+      const pdfHeight = pdf.internal.pageSize.getHeight(); // Altura A4
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
+  
+      // Garantir que a imagem seja escalada corretamente para o formato A4
       const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-      
+  
+      // Calculando a posição para centralizar a imagem
       const imgX = (pdfWidth - imgWidth * ratio) / 2;
       const imgY = 0;
-    
+  
       pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
       pdf.save(`dashboard_${vendedorInfo.nome || 'vendedor'}_${new Date().toISOString()}.pdf`);
-      
+  
       showToast('PDF exportado com sucesso', 'success');
     } catch (error) {
       console.error('Erro na exportação:', error);
@@ -574,9 +601,9 @@ const calculatedData = useMemo(() => {
     } finally {
       setIsExporting(false);
       setLoading(false);
-    }
+    }  
   }, [vendedorInfo.nome, showToast]);
-// Effect para autenticação
+  // Effect para autenticação
   useEffect(() => {
     setLoading(true);
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -584,7 +611,7 @@ const calculatedData = useMemo(() => {
         if (currentUser) {
           const userRef = ref(db, `users/${currentUser.uid}`);
           const snapshot = await get(userRef);
-          
+
           if (snapshot.exists()) {
             const userData = snapshot.val();
             setUser({ ...currentUser, role: userData.role || 'user' });
@@ -633,8 +660,8 @@ const calculatedData = useMemo(() => {
       <div className={`min-h-screen bg-gray-100 p-4 ${isExporting ? 'exporting' : ''}`}>
         {loading && <LoadingSpinner />}
         <Routes>
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
               user ? (
                 <Navigate to="/dashboard" />
@@ -683,6 +710,14 @@ const calculatedData = useMemo(() => {
                         >
                           Criar nova conta
                         </button>
+                        <button
+                          type="button"
+                          onClick={openPasswordResetModal}
+                          className="w-full p-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200"
+                        >
+                          Esqueci a senha
+                        </button>
+
                       </div>
                     </form>
                   )}
@@ -691,13 +726,13 @@ const calculatedData = useMemo(() => {
             }
           />
 
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               !user ? (
                 <Navigate to="/" />
               ) : (
-                <DashboardContent 
+                <DashboardContent
                   user={user}
                   vendedorInfo={vendedorInfo}
                   areas={areas}
@@ -720,13 +755,13 @@ const calculatedData = useMemo(() => {
             }
           />
 
-          <Route 
-            path="/dashboard-geral" 
+          <Route
+            path="/dashboard-geral"
             element={
               !user ? <Navigate to="/" /> : <DashboardGeral />
             }
           />
-          
+
           {/* Adicionar rota 404 */}
           <Route path="*" element={
             <div className="flex items-center justify-center min-h-screen">
@@ -753,6 +788,8 @@ const calculatedData = useMemo(() => {
           </Modal>
         )}
 
+
+
         {editingSection === 'areas' && (
           <Modal onClose={handleEditCancel}>
             <AreaForm
@@ -761,6 +798,12 @@ const calculatedData = useMemo(() => {
               onCancel={handleEditCancel}
               isLoading={loading}
             />
+          </Modal>
+        )}
+
+        {isPasswordResetOpen && (
+          <Modal isOpen={isPasswordResetOpen} onClose={closePasswordResetModal}>
+            <PasswordResetForm onClose={closePasswordResetModal} />
           </Modal>
         )}
 

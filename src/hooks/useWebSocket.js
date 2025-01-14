@@ -1,101 +1,92 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
+import useWebSocket from './useWebSocket';
 
-const useWebSocket = () => {
-  const [connected, setConnected] = useState(false);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  const [ws, setWs] = useState(null);
+const WebSocketComponent = () => {
+  const { connected, data, error, sendData, reconnect } = useWebSocket();
+  const [message, setMessage] = useState('');
 
-  const connect = useCallback(() => {
-    try {
-      // Construir URL baseada no ambiente atual
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      const wsUrl = `${protocol}//${host}/ws`;
-
-      console.log('Tentando conectar WebSocket em:', wsUrl);
-      const socket = new WebSocket(wsUrl);
-
-      socket.onopen = () => {
-        console.log('WebSocket conectado com sucesso');
-        setConnected(true);
-        setError(null);
-      };
-
-      socket.onmessage = (event) => {
-        try {
-          const parsedData = JSON.parse(event.data);
-          setData(parsedData);
-        } catch (e) {
-          console.error('Erro ao processar dados do WebSocket:', e);
-          setError('Erro ao processar dados');
-        }
-      };
-
-      socket.onclose = (event) => {
-        console.log('WebSocket desconectado, código:', event.code);
-        setConnected(false);
-        
-        // Só tenta reconectar se não foi um fechamento limpo
-        if (event.code !== 1000) {
-          console.log('Tentando reconectar em 3 segundos...');
-          setTimeout(connect, 3000);
-        }
-      };
-
-      socket.onerror = (event) => {
-        console.error('Erro WebSocket:', event);
-        setError('Erro na conexão WebSocket');
-        setConnected(false);
-        
-        // Fecha a conexão com erro para permitir reconexão
-        socket.close();
-      };
-
-      setWs(socket);
-    } catch (err) {
-      console.error('Erro ao criar conexão WebSocket:', err);
-      setError('Erro ao criar conexão WebSocket');
-      
-      // Tenta reconectar após erro
-      setTimeout(connect, 3000);
+  // Função para enviar mensagem
+  const handleSend = () => {
+    if (message.trim() !== '') {
+      sendData({ message }); // Envia como objeto JSON
+      setMessage(''); // Limpa o campo de mensagem
     }
-  }, []);
-
-  useEffect(() => {
-    connect();
-
-    return () => {
-      if (ws) {
-        console.log('Fechando conexão WebSocket...');
-        ws.close(1000, 'Componente desmontado');
-      }
-    };
-  }, [connect, ws]);
-
-  // Função para enviar dados
-  const sendData = useCallback((data) => {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-      try {
-        ws.send(JSON.stringify(data));
-      } catch (error) {
-        console.error('Erro ao enviar dados:', error);
-        setError('Erro ao enviar dados');
-      }
-    } else {
-      console.warn('WebSocket não está conectado ao tentar enviar dados');
-      setError('WebSocket não está conectado');
-    }
-  }, [ws]);
-
-  return { 
-    connected, 
-    data, 
-    error,
-    sendData,
-    // Função para forçar reconexão
-    reconnect: connect
   };
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h1>WebSocket Interface</h1>
+      
+      {/* Status de Conexão */}
+      <p>Status: 
+        <span style={{ color: connected ? 'green' : 'red', fontWeight: 'bold' }}>
+          {connected ? ' Conectado' : ' Desconectado'}
+        </span>
+      </p>
+      
+      {/* Erros */}
+      {error && <p style={{ color: 'red' }}>Erro: {error}</p>}
+      
+      {/* Última Mensagem Recebida */}
+      {data && (
+        <pre style={{
+          backgroundColor: '#f4f4f4',
+          padding: '10px',
+          borderRadius: '5px',
+          overflowX: 'auto',
+        }}>
+          Última mensagem: {JSON.stringify(data, null, 2)}
+        </pre>
+      )}
+      
+      {/* Campo para enviar mensagem */}
+      <input 
+        type="text" 
+        value={message} 
+        onChange={(e) => setMessage(e.target.value)} 
+        placeholder="Digite sua mensagem"
+        style={{
+          padding: '10px',
+          border: '1px solid #ccc',
+          borderRadius: '5px',
+          marginRight: '10px',
+          width: '300px',
+        }}
+      />
+      <button 
+        onClick={handleSend} 
+        disabled={!connected} 
+        style={{
+          padding: '10px 20px',
+          backgroundColor: connected ? '#4CAF50' : '#ccc',
+          color: 'white',
+          border: 'none',
+          borderRadius: '5px',
+          cursor: connected ? 'pointer' : 'not-allowed',
+        }}
+      >
+        Enviar
+      </button>
+
+      {/* Botão de Reconectar */}
+      {!connected && (
+        <button 
+          onClick={reconnect} 
+          style={{
+            padding: '10px 20px',
+            backgroundColor: '#007BFF',
+            color: 'white',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer',
+            marginLeft: '10px',
+          }}
+        >
+          Reconectar
+        </button>
+      )}
+    </div>
+  );
 };
 
-export default useWebSocket;
+export default WebSocketComponent;

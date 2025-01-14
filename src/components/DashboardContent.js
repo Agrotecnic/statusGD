@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import ProdutosList from './ProdutosList';
 
+
 const DashboardContent = ({
   user,
   vendedorInfo,
@@ -12,6 +13,10 @@ const DashboardContent = ({
   handleProdutoRemove,
   // ...other props
 }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false); // Estado para controlar o modal
+
+  const toggleModal = () => setIsModalOpen(!isModalOpen); // Função para alternar o estado do modal
+  
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
