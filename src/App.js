@@ -531,39 +531,41 @@ function App() {
     }
   }, [produtos, vendedorInfo.nome, showToast]);
 
+
   const exportToPDF = useCallback(async () => {
     try {
       setIsExporting(true);
       setLoading(true);
-  
-      // Wait for state updates to reflect in the DOM
+
+      // Aguarda a atualização do DOM
       await new Promise(resolve => setTimeout(resolve, 100));
-  
+
       const input = document.getElementById('dashboard');
       if (!input) {
         throw new Error('Elemento do dashboard não encontrado');
       }
-  
+
+      // Adicionar classe para forçar o layout de PC
+      input.classList.add('pc-layout');
+
+      const scale = 2; // Ajuste a escala conforme necessário
+
       const canvas = await html2canvas(input, {
-        scale: 2,
+        scale: scale,
         useCORS: true,
-        allowTaint: true,
-        scrollY: -window.scrollY,
-        windowWidth: document.documentElement.offsetWidth,
-        windowHeight: document.documentElement.offsetHeight,
         onclone: (clonedDoc) => {
           // Remove elementos de controle no clone do documento
           const elementsToHide = clonedDoc.getElementsByClassName('hide-on-print');
           Array.from(elementsToHide).forEach(element => {
             element.style.display = 'none';
           });
-  
+
           // Esconde todos os botões
           const buttons = clonedDoc.getElementsByTagName('button');
           Array.from(buttons).forEach(button => {
             button.style.display = 'none';
           });
-  
+
           // Esconde última coluna da tabela (ações)
           const tableCells = clonedDoc.querySelectorAll('table th:last-child, table td:last-child');
           Array.from(tableCells).forEach(cell => {
@@ -571,29 +573,39 @@ function App() {
           });
         }
       });
-  
+
+      // Remover a classe após a captura
+      input.classList.remove('pc-layout');
+
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
         format: 'a4'
       });
-  
-      const pdfWidth = pdf.internal.pageSize.getWidth();  // Largura A4
+
+      const pdfWidth = pdf.internal.pageSize.getWidth(); // Largura A4
       const pdfHeight = pdf.internal.pageSize.getHeight(); // Altura A4
-      const imgWidth = canvas.width;
-      const imgHeight = canvas.height;
-  
+      const margin = 0; // Margem de 10 mm em cada lado
+
+      const contentWidth = pdfWidth - margin * 2; // Largura disponível
+      const contentHeight = pdfHeight - margin * 2; // Altura disponível
+      const imgWidth = canvas.width / scale;
+      const imgHeight = canvas.height / scale;
+
       // Garantir que a imagem seja escalada corretamente para o formato A4
-      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-  
-      // Calculando a posição para centralizar a imagem
-      const imgX = (pdfWidth - imgWidth * ratio) / 2;
-      const imgY = 0;
-  
+      const ratio = Math.min(contentWidth / imgWidth, contentHeight / imgHeight);
+
+      // Calculando a posição para alinhar ao topo
+      const imgX = margin + (contentWidth - imgWidth * ratio) / 2; // Centralizado horizontalmente
+      const imgY = margin; // Alinhado ao topo
+
       pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+
+
+
       pdf.save(`dashboard_${vendedorInfo.nome || 'vendedor'}_${new Date().toISOString()}.pdf`);
-  
+
       showToast('PDF exportado com sucesso', 'success');
     } catch (error) {
       console.error('Erro na exportação:', error);
@@ -601,9 +613,8 @@ function App() {
     } finally {
       setIsExporting(false);
       setLoading(false);
-    }  
+    }
   }, [vendedorInfo.nome, showToast]);
-  // Effect para autenticação
   useEffect(() => {
     setLoading(true);
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {

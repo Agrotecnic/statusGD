@@ -8,3 +8,8 @@
     margin: 0mm;
   }
 }
+
+.pc-layout {
+  width: 1024px; /* Largura típica de um layout de PC */
+  
+}
