@@ -1,32 +1,70 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import ProdutoForm from '../../../src/components/ProdutoForm/ProdutoForm'; // Importe o componente ProdutoForm
+import Modal from '../../../src/components/Modal/Modal'; // Importe o componente Modal
 
 const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedProduto, setSelectedProduto] = useState(null);
+
+  const handleEdit = (produto) => {
+    setSelectedProduto(produto);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedProduto(null);
+  };
+
+  const handleFormSubmit = (formData) => {
+    onEdit(formData);
+    handleCloseModal();
+  };
+
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full bg-white">
-        <thead className="bg-gray-800 text-white">
+    <>
+      <table className="min-w-full divide-y divide-gray-200">
+        <thead className="bg-gray-50">
           <tr>
-            <th className="py-2 px-4 text-left">Nome</th>
-            <th className="py-2 px-4 border-b">Cliente</th> 
-            <th className="py-2 px-4 text-right">Valor Vendido</th>
-            <th className="py-2 px-4 border-b">Valor Bonificado</th>
-            <th className="py-2 px-4 border-b">Áreas</th>
-            <th className="py-2 px-4 border-b hide-on-print">Ações</th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Cliente
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Produtos
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Valor Vendido
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Valor Bonificado
+            </th>
+            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              Áreas
+            </th>
+            <th scope="col" className="relative px-6 py-3">
+              <span className="sr-only">Edit</span>
+            </th>
           </tr>
         </thead>
-        <tbody className="text-gray-700">
+        <tbody className="bg-white divide-y divide-gray-200">
           {produtos.map((produto, index) => (
             <tr key={index}>
-              <td className="py-2 px-4">{produto.nome}</td>
-              <td className="py-2 px-4 border-b">{produto.cliente || '-'}</td> 
-              <td className="py-2 px-4 text-right">{formatMoney(produto.valorVendido)}</td>
-              <td className="py-2 px-4 border-b">{formatMoney(produto.valorBonificado)}</td>
-              <td className="py-2 px-4 border-b">{produto.areas}</td>
-              <td className="py-2 px-4 border-b hide-on-print">
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.cliente}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                {produto.produtos && Array.isArray(produto.produtos)
+                  ? produto.produtos.map(p => p.nome).join(', ')
+                  : produto.produtos
+                  ? JSON.parse(produto.produtos).map(p => p.nome).join(', ')
+                  : ''}
+              </td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatMoney(produto.valorVendido)}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatMoney(produto.valorBonificado)}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.areas}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
-                  onClick={() => onEdit('produto', { index })}
-                  className="text-blue-500 hover:text-blue-700 mr-2"
+                  onClick={() => handleEdit(produto)}
+                  className="text-indigo-600 hover:text-indigo-900"
                   disabled={disabled}
                 >
                   Editar
@@ -36,18 +74,36 @@ const ProdutosTable = ({ produtos, onEdit, formatMoney, disabled }) => {
           ))}
         </tbody>
       </table>
-    </div>
+
+      {isModalOpen && (
+        <Modal onClose={handleCloseModal}>
+          <ProdutoForm
+            initialData={selectedProduto}
+            onSubmit={handleFormSubmit}
+            onCancel={handleCloseModal}
+            isLoading={disabled}
+          />
+        </Modal>
+      )}
+    </>
   );
 };
 
 ProdutosTable.propTypes = {
   produtos: PropTypes.arrayOf(
     PropTypes.shape({
-      nome: PropTypes.string,
-      cliente: PropTypes.string, // Novo PropType
+      cliente: PropTypes.string,
       valorVendido: PropTypes.number,
       valorBonificado: PropTypes.number,
-      areas: PropTypes.number
+      areas: PropTypes.number,
+      produtos: PropTypes.oneOfType([
+        PropTypes.string, // JSON string
+        PropTypes.arrayOf(
+          PropTypes.shape({
+            nome: PropTypes.string
+          })
+        )
+      ])
     })
   ).isRequired,
   onEdit: PropTypes.func.isRequired,

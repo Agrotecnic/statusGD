@@ -1,9 +1,9 @@
-export { default as AreaForm } from './AreaForm/AreaForm';
-export { default as ErrorBoundary } from './ErrorBoundary';
-export { default as ImageUploader } from './ImageUploader';
-export { default as LoadingSpinner } from './LoadingSpinner';
-export { default as MetricasCard } from './MetricasCard';
-export { default as Modal } from './Modal';
-export { default as ProdutoForm } from './ProdutoForm';
-export { default as ProdutosTable } from './ProdutosTable';
-export { default as VendedorForm } from './VendedorForm';
+// export { default as AreaForm } from './AreaForm/AreaForm';
+// export { default as ErrorBoundary } from './ErrorBoundary';
+// export { default as ImageUploader } from './ImageUploader';
+// export { default as LoadingSpinner } from './LoadingSpinner';
+// export { default as MetricasCard } from './MetricasCard';
+// export { default as Modal } from './Modal';
+// export { default as ProdutoForm } from './ProdutoForm';
+// export { default as ProdutosTable } from './ProdutosTable';
+// export { default as VendedorForm } from './VendedorForm';
