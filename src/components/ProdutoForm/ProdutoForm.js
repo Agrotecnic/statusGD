@@ -108,6 +108,7 @@ const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading
         }
       });
       const produtosJson = JSON.stringify(formData.produtos.map(produto => produto.nome));
+      console.log('Dados do formulário antes do envio:', { ...formData, produtos: produtosJson });
       onSubmit({ ...formData, produtos: produtosJson });
     }
   };

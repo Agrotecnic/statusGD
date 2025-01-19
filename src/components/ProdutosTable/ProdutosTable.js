@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import ProdutoForm from '../../../src/components/ProdutoForm/ProdutoForm'; // Importe o componente ProdutoForm
 import Modal from '../../../src/components/Modal/Modal'; // Importe o componente Modal
@@ -9,6 +9,10 @@ const ProdutosTable = ({ userId, produtos, onEdit, onDelete, formatMoney, disabl
   const [selectedProduto, setSelectedProduto] = useState(null);
   const [selectedProdutos, setSelectedProdutos] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    console.log('Produtos recebidos:', produtos);
+  }, [produtos]);
 
   const handleEdit = (produto) => {
     setSelectedProduto(produto);
@@ -52,6 +56,27 @@ const ProdutosTable = ({ userId, produtos, onEdit, onDelete, formatMoney, disabl
     produto.cliente.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  useEffect(() => {
+    console.log('Produtos filtrados:', filteredProdutos);
+  }, [filteredProdutos]);
+
+  const renderProdutos = (produtos) => {
+    if (typeof produtos === 'string') {
+      try {
+        const parsedProdutos = JSON.parse(produtos);
+        if (Array.isArray(parsedProdutos)) {
+          return parsedProdutos.join(', ');
+        }
+      } catch (error) {
+        console.error('Erro ao parsear JSON:', error);
+        return produtos;
+      }
+    } else if (Array.isArray(produtos)) {
+      return produtos.map(p => p.nome).join(', ');
+    }
+    return produtos;
+  };
+
   return (
     <>
       <div className="mb-4 flex justify-between items-center">
@@ -80,7 +105,7 @@ const ProdutosTable = ({ userId, produtos, onEdit, onDelete, formatMoney, disabl
                 type="checkbox"
                 onChange={(e) => {
                   if (e.target.checked) {
-                    setSelectedProdutos(filteredProdutos.map((_, index) => index));
+                    setSelectedProdutos(filteredProdutos.map((produto) => produto.id));
                   } else {
                     setSelectedProdutos([]);
                   }
@@ -109,22 +134,18 @@ const ProdutosTable = ({ userId, produtos, onEdit, onDelete, formatMoney, disabl
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {filteredProdutos.map((produto, index) => (
-            <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
+          {filteredProdutos.map((produto) => (
+            <tr key={produto.id} className="bg-white">
               <td>
                 <input
                   type="checkbox"
-                  checked={selectedProdutos.includes(index)}
-                  onChange={() => handleSelect(index)}
+                  checked={selectedProdutos.includes(produto.id)}
+                  onChange={() => handleSelect(produto.id)}
                 />
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.cliente}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {produto.produtos && Array.isArray(produto.produtos)
-                  ? produto.produtos.map(p => p.nome).join(', ')
-                  : produto.produtos
-                  ? JSON.parse(produto.produtos).map(p => p.nome).join(', ')
-                  : ''}
+                {renderProdutos(produto.produtos)}
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatMoney(produto.valorVendido)}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatMoney(produto.valorBonificado)}</td>
@@ -139,8 +160,8 @@ const ProdutosTable = ({ userId, produtos, onEdit, onDelete, formatMoney, disabl
                 </button>
                 <button
                   onClick={() => {
-                    console.log('Produto ID:', index);
-                    handleDelete(index);
+                    console.log('Produto ID:', produto.id);
+                    handleDelete(produto.id);
                   }}
                   className="text-red-600 hover:text-red-900 ml-3"
                   disabled={disabled}

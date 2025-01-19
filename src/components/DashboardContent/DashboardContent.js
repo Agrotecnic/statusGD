@@ -32,8 +32,8 @@ const DashboardContent = ({
   // Extraindo userId corretamente
   const userId = user.uid || user.id || user.proactiveRefresh?.user?.uid;
 
-  console.log('userId:', userId);
-  console.log(JSON.stringify(user));
+  // console.log('userId:', userId);
+  // console.log(JSON.stringify(user));
 
   const normalizedVendedorInfo = {
     ...vendedorInfo,

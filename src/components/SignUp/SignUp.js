@@ -17,14 +17,14 @@ const SignUp = ({ onToggleForm }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(`Changing ${name} to ${value}`);
+    // console.log(`Changing ${name} to ${value}`);
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
       // Reset regional if businessUnit changes
       regional: name === 'businessUnit' ? '' : prevData.regional
     }));
-    console.log('Updated formData:', formData);
+    // console.log('Updated formData:', formData);
   };
 
   const handleSubmit = async (e) => {
@@ -32,7 +32,7 @@ const SignUp = ({ onToggleForm }) => {
     setError('');
     setLoading(true);
 
-    console.log('Form Data on Submit:', formData);
+    // console.log('Form Data on Submit:', formData);
 
     if (formData.password !== formData.confirmPassword) {
       setError('As senhas não coincidem');
@@ -85,8 +85,8 @@ const SignUp = ({ onToggleForm }) => {
     BUTEST: ['REGIONAL TESTE']
   };
 
-  console.log('Form Data:', formData);
-  console.log('Regionais por BU:', regionaisPorBU);
+  // console.log('Form Data:', formData);
+  // console.log('Regionais por BU:', regionaisPorBU);
 
   return (
     <div className="p-8 bg-white rounded-lg shadow-md w-96">
@@ -184,12 +184,12 @@ const SignUp = ({ onToggleForm }) => {
             value={formData.regional}
             onChange={(e) => {
               const { name, value } = e.target;
-              console.log(`Changing ${name} to ${value}`);
+              // console.log(`Changing ${name} to ${value}`);
               setFormData((prevData) => ({
                 ...prevData,
                 [name]: value
               }));
-              console.log('Updated formData:', formData);
+              // console.log('Updated formData:', formData);
             }}
             className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
             required
