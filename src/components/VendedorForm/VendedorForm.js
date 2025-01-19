@@ -93,6 +93,21 @@ const VendedorForm = ({ initialData, onSubmit, onCancel, isLoading }) => {
         </select>
       </div>
 
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          WhatsApp
+        </label>
+        <input
+          type="text"
+          name="whatsapp"
+          value={formData.whatsapp || ''}
+          onChange={handleChange}
+          className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+          required
+          disabled={isLoading}
+        />
+      </div>
+
       <div className="flex justify-end space-x-2">
         <button
           type="button"
@@ -118,7 +133,8 @@ VendedorForm.propTypes = {
   initialData: PropTypes.shape({
     nome: PropTypes.string,
     regional: PropTypes.string,
-    businessUnit: PropTypes.string
+    businessUnit: PropTypes.string,
+    whatsapp: PropTypes.string // Adicionando a prop whatsapp
   }).isRequired,
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
