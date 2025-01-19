@@ -33,4 +33,4 @@ const dbConfig = {
     maxRetries: 5
 };
 
-export { db, dbConfig };
+export { app, db, dbConfig };

@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { useNavigate } from 'react-router-dom';
-// Corrigir importação (remova a extensão .js)
-import { normalizeBU, normalizeRegional } from '../../utils/normalizer.js';
+import { normalizeBU, normalizeRegional } from '../../utils/normalizer';
 
 // Componentes
 import AreasCard from '../AreasCard/AreasCard';
@@ -11,6 +10,7 @@ import ProdutosTable from '../ProdutosTable/ProdutosTable';
 import ImageUploader from '../ImageUploader/ImageUploader';
 
 const DashboardContent = ({
+  user,
   vendedorInfo,
   areas,
   produtos,
@@ -25,37 +25,31 @@ const DashboardContent = ({
   addProduto,
   formatMoney,
   formatPercent,
+  onDelete // Recebendo a função onDelete
 }) => {
   const navigate = useNavigate();
-  // Remover variável não utilizada
-  // const isAdmin = user?.role === 'admin';
 
-  // Adicione normalização quando receber os dados
+  // Extraindo userId corretamente
+  const userId = user.uid || user.id || user.proactiveRefresh?.user?.uid;
+
+  console.log('userId:', userId);
+  console.log(JSON.stringify(user));
+
   const normalizedVendedorInfo = {
     ...vendedorInfo,
     businessUnit: normalizeBU(vendedorInfo.businessUnit) || vendedorInfo.businessUnit,
     regional: normalizeRegional(vendedorInfo.regional) || vendedorInfo.regional
   };
 
-  // Prepara os dados para o MetricasCard com o mapeamento correto dos campos
   const metricsData = useMemo(() => {
-    // Converte todos os valores para número e garante valores válidos
     const acompanhamento = Number(areas?.emAcompanhamento || 0);
-    const finalizados = Number(areas?.finalizados || 0); // Corrigido de finalizadas para finalizados
+    const finalizados = Number(areas?.finalizados || 0);
     const implantar = Number(areas?.aImplantar || 0);
     const mediaHectares = Number(areas?.mediaHectaresArea || 0);
 
-    console.log('Dados das Áreas:', {
-      acompanhamento,
-      finalizados, // Log atualizado
-      implantar,
-      mediaHectares,
-      areas
-    });
-
     return {
       areasAcompanhamento: acompanhamento,
-      areasFinalizadas: finalizados, // Corrigido para usar o valor correto
+      areasFinalizadas: finalizados,
       areasImplantar: implantar,
       mediaHectaresArea: mediaHectares,
       areaPotencialTotal: Number(areas?.areaPotencialTotal || 0),
@@ -67,7 +61,6 @@ const DashboardContent = ({
 
   return (
     <div id="dashboard" className="max-w-6xl mx-auto bg-white rounded-lg shadow-lg">
-      {/* Header */}
       <header className="p-6 border-b">
         <div className="flex justify-between items-center">
           <div>
@@ -111,9 +104,7 @@ const DashboardContent = ({
         </div>
       </header>
 
-      {/* Main content grid */}
       <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Informações do Vendedor */}
         <div className="border rounded-lg p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Informações do Vendedor</h2>
@@ -132,7 +123,6 @@ const DashboardContent = ({
           </div>
         </div>
 
-        {/* Areas Card */}
         <AreasCard 
           data={areas}
           formatPercent={formatPercent}
@@ -140,7 +130,6 @@ const DashboardContent = ({
           disabled={loading}
         />
 
-        {/* Images Upload */}
         <div className="border rounded-lg p-4">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold">Imagens</h2>
@@ -173,15 +162,13 @@ const DashboardContent = ({
           </div>
         </div>
 
-        {/* Metrics Card */}
         <MetricasCard 
           data={metricsData}
           formatMoney={formatMoney}
-          formatPercent={formatPercent} // Adicionado formatPercent
+          formatPercent={formatPercent}
         />
       </div>
 
-      {/* Products Section */}
       <div className="p-6">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-semibold">Produtos</h2>
@@ -194,8 +181,10 @@ const DashboardContent = ({
           </button>
         </div>
         <ProdutosTable
+          userId={userId} // Passando o userId corretamente
           produtos={produtos}
           onEdit={handleEditStart}
+          onDelete={onDelete} // Passando a função onDelete
           formatMoney={formatMoney}
           disabled={loading}
         />
@@ -205,6 +194,15 @@ const DashboardContent = ({
 };
 
 DashboardContent.propTypes = {
+  user: PropTypes.shape({
+    uid: PropTypes.string,
+    id: PropTypes.string,
+    proactiveRefresh: PropTypes.shape({
+      user: PropTypes.shape({
+        uid: PropTypes.string
+      })
+    })
+  }).isRequired,
   vendedorInfo: PropTypes.shape({
     nome: PropTypes.string,
     regional: PropTypes.string,
@@ -224,7 +222,8 @@ DashboardContent.propTypes = {
   addProduto: PropTypes.func.isRequired,
   formatMoney: PropTypes.func.isRequired,
   formatPercent: PropTypes.func.isRequired,
-  showToast: PropTypes.func.isRequired
+  showToast: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired // Adicionando a prop onDelete
 };
 
 export default DashboardContent;

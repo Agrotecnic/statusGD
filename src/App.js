@@ -411,10 +411,10 @@ function App() {
     }
   }, [produtos, saveData, showToast]);
 
-  const handleProdutoRemove = useCallback(async (index) => {
+  const handleProdutoRemove = useCallback(async (produtoId) => {
     try {
       setLoading(true);
-      const newProdutos = produtos.filter((_, idx) => idx !== index);
+      const newProdutos = produtos.filter((produto) => produto.id !== produtoId);
       setProdutos(newProdutos);
       await saveData();
       setEditingItem(null);
@@ -426,6 +426,7 @@ function App() {
       setLoading(false);
     }
   }, [produtos, saveData, showToast]);
+
 
   const addProduto = useCallback(() => {
     const newProduto = {
@@ -669,7 +670,7 @@ function App() {
   // Render
   return (
     <ErrorBoundary>
-      <div className={`min-h-screen bg-gray-100 p-4 ${isExporting ? 'exporting' : ''}`}>
+      <div className={`min-h-screen  p-4 ${isExporting ? 'exporting' : ''}`}style={{ backgroundColor: '#e1e1e1' }}>
         {loading && <LoadingSpinner />}
         <Routes>
           <Route
@@ -762,6 +763,7 @@ function App() {
                   formatMoney={formatMoney}
                   formatPercent={formatPercent}
                   showToast={showToast}
+                  onDelete={handleProdutoRemove}
                 />
               )
             }

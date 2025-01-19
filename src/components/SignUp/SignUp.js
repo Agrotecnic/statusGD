@@ -15,10 +15,13 @@ const SignUp = ({ onToggleForm }) => {
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData((prevData) => ({
+      ...prevData,
+      [name]: value,
+      // Reset regional if businessUnit changes
+      regional: name === 'businessUnit' ? '' : prevData.regional
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -54,6 +57,20 @@ const SignUp = ({ onToggleForm }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const businessUnits = [
+    'BU1',
+    'BU2',
+    'BU3',
+    'BUTEST'
+  ];
+
+  const regionaisPorBU = {
+    BU1: ['RS NORTE', 'RS SUL', 'PR SUL SC', 'PR NORTE SP EXP'],
+    BU2: ['AC RO MT OESTE', 'MS', 'MT', 'MT SUL', 'GO'],
+    BU3: ['MA PI TO PA', 'CERRADO MG', 'LESTE', 'NORDESTE'],
+    BUTEST: ['REGIONAL TESTE']
   };
 
   return (
@@ -116,27 +133,40 @@ const SignUp = ({ onToggleForm }) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Regional</label>
-          <input
-            type="text"
-            name="regional"
-            value={formData.regional}
-            onChange={handleChange}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
-            required
-          />
-        </div>
-
-        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Business Unit</label>
-          <input
-            type="text"
+          <select
             name="businessUnit"
             value={formData.businessUnit}
             onChange={handleChange}
             className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
             required
-          />
+          >
+            <option value="" disabled>Selecione uma Business Unit</option>
+            {businessUnits.map((bu) => (
+              <option key={bu} value={bu}>
+                {bu}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Regional</label>
+          <select
+            name="regional"
+            value={formData.regional}
+            onChange={handleChange}
+            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+            required
+            disabled={!formData.businessUnit}
+          >
+            <option value="" disabled>Selecione uma Regional</option>
+            {formData.businessUnit && regionaisPorBU[formData.businessUnit].map((regional) => (
+              <option key={regional} value={regional}>
+                {regional}
+              </option>
+            ))}
+          </select>
         </div>
 
         <button

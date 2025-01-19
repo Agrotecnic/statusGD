@@ -156,7 +156,7 @@ export default function App() {
     input: {
       width: "100%",
       padding: "8px",
-      border: "1px solid #e5e7eb",
+      border: "1px solid #e1e1e1",
       borderRadius: "4px",
       marginBottom: "8px",
       outline: "none",
