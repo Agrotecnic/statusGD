@@ -120,6 +120,7 @@ const DashboardContent = ({
             <p><strong>Nome:</strong> {normalizedVendedorInfo.nome || '-'}</p>
             <p><strong>Regional:</strong> {normalizedVendedorInfo.regional || '-'}</p>
             <p><strong>Business Unit:</strong> {normalizedVendedorInfo.businessUnit || '-'}</p>
+            <p><strong>WhatsApp:</strong> {normalizedVendedorInfo.whatsapp || '-'}</p>
           </div>
         </div>
 
@@ -207,7 +208,8 @@ DashboardContent.propTypes = {
     nome: PropTypes.string,
     regional: PropTypes.string,
     businessUnit: PropTypes.string,
-    dataAtualizacao: PropTypes.string
+    dataAtualizacao: PropTypes.string,
+    whatsapp: PropTypes.string // Adicionando a prop whatsapp
   }).isRequired,
   areas: PropTypes.object.isRequired,
   produtos: PropTypes.array.isRequired,

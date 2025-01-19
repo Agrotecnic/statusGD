@@ -9,19 +9,22 @@ const SignUp = ({ onToggleForm }) => {
     confirmPassword: '',
     nome: '',
     regional: '',
-    businessUnit: ''
+    businessUnit: '',
+    whatsapp: '' // Adicionando o campo whatsapp ao estado
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    console.log(`Changing ${name} to ${value}`);
     setFormData((prevData) => ({
       ...prevData,
       [name]: value,
       // Reset regional if businessUnit changes
       regional: name === 'businessUnit' ? '' : prevData.regional
     }));
+    console.log('Updated formData:', formData);
   };
 
   const handleSubmit = async (e) => {
@@ -29,8 +32,16 @@ const SignUp = ({ onToggleForm }) => {
     setError('');
     setLoading(true);
 
+    console.log('Form Data on Submit:', formData);
+
     if (formData.password !== formData.confirmPassword) {
       setError('As senhas não coincidem');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.regional) {
+      setError('Por favor, selecione uma Regional');
       setLoading(false);
       return;
     }
@@ -45,6 +56,7 @@ const SignUp = ({ onToggleForm }) => {
         nome: formData.nome,
         regional: formData.regional,
         businessUnit: formData.businessUnit,
+        whatsapp: formData.whatsapp, // Salvando o número do WhatsApp
         dataAtualizacao: new Date().toLocaleString()
       });
 
@@ -72,6 +84,9 @@ const SignUp = ({ onToggleForm }) => {
     BU3: ['MA PI TO PA', 'CERRADO MG', 'LESTE', 'NORDESTE'],
     BUTEST: ['REGIONAL TESTE']
   };
+
+  console.log('Form Data:', formData);
+  console.log('Regionais por BU:', regionaisPorBU);
 
   return (
     <div className="p-8 bg-white rounded-lg shadow-md w-96">
@@ -133,6 +148,18 @@ const SignUp = ({ onToggleForm }) => {
         </div>
 
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">WhatsApp</label>
+          <input
+            type="text"
+            name="whatsapp"
+            value={formData.whatsapp}
+            onChange={handleChange}
+            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+            required
+          />
+        </div>
+
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Business Unit</label>
           <select
             name="businessUnit"
@@ -155,14 +182,22 @@ const SignUp = ({ onToggleForm }) => {
           <select
             name="regional"
             value={formData.regional}
-            onChange={handleChange}
+            onChange={(e) => {
+              const { name, value } = e.target;
+              console.log(`Changing ${name} to ${value}`);
+              setFormData((prevData) => ({
+                ...prevData,
+                [name]: value
+              }));
+              console.log('Updated formData:', formData);
+            }}
             className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
             required
             disabled={!formData.businessUnit}
           >
             <option value="" disabled>Selecione uma Regional</option>
-            {formData.businessUnit && regionaisPorBU[formData.businessUnit].map((regional) => (
-              <option key={regional} value={regional}>
+            {formData.businessUnit && regionaisPorBU[formData.businessUnit].map((regional, index) => (
+              <option key={index} value={regional}>
                 {regional}
               </option>
             ))}
