@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Autosuggest from 'react-autosuggest';
-import fetchProdutos from '../../models/Product';
+import { fetchProdutos } from '../../models/Product'; // Certifique-se de que o caminho está correto
 
 const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading }) => {
   const [formData, setFormData] = useState({
@@ -9,7 +9,7 @@ const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading
     valorVendido: initialData.valorVendido || 0,
     valorBonificado: initialData.valorBonificado || 0,
     areas: initialData.areas || 0,
-    produtos: initialData.produtos || [{ nome: '' }]
+    produtos: Array.isArray(initialData.produtos) ? initialData.produtos : [{ nome: '' }]
   });
 
   const [errors, setErrors] = useState({});
@@ -99,17 +99,7 @@ const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading
   const handleSubmit = (e) => {
     e.preventDefault();
     if (validateForm()) {
-      formData.produtos.forEach(produto => {
-        const existingProduct = allProducts.find(product => product.nome.toLowerCase() === produto.nome.toLowerCase());
-        if (!existingProduct) {
-          // Adicionar novo produto à lista de produtos
-          const newProduct = { id: produto.nome, nome: produto.nome, marca: '', categoria: '' };
-          setAllProducts(prev => [...prev, newProduct]);
-        }
-      });
-      const produtosJson = JSON.stringify(formData.produtos.map(produto => produto.nome));
-      console.log('Dados do formulário antes do envio:', { ...formData, produtos: produtosJson });
-      onSubmit({ ...formData, produtos: produtosJson });
+      onSubmit(formData);
     }
   };
 

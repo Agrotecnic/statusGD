@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import ProdutosList from './ProdutosList';
+import ProdutosTable from './ProdutosTable'; // Certifique-se de importar o componente correto
 
 
 const DashboardContent = ({
@@ -43,6 +44,11 @@ const DashboardContent = ({
     </div>
   );
 };
+
+const produtosComId = produtos.map((produto, index) => ({
+  ...produto,
+  id: produto.id || `produto-${index}`
+}));
 
 DashboardContent.propTypes = {
   user: PropTypes.shape({

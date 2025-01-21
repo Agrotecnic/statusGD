@@ -1,4 +1,4 @@
-import { getDatabase, ref, get } from 'firebase/database';
+import { getDatabase, ref, get, set, update, push } from 'firebase/database';
 
 const fetchProdutos = async () => {
   const db = getDatabase();
@@ -22,4 +22,18 @@ const fetchProdutos = async () => {
   return produtos;
 };
 
-export default fetchProdutos;
+const addProduto = async (produto) => {
+  const db = getDatabase();
+  const produtosRef = ref(db, 'produtos');
+  const newProdutoRef = push(produtosRef);
+  await set(newProdutoRef, produto);
+  return { id: newProdutoRef.key, ...produto };
+};
+
+const updateProduto = async (id, produto) => {
+  const db = getDatabase();
+  const produtoRef = ref(db, `produtos/${id}`);
+  await update(produtoRef, produto);
+};
+
+export { fetchProdutos, addProduto, updateProduto };

@@ -387,7 +387,7 @@ function App() {
     }
   }, [saveData, showToast]);
 
-  const handleProdutoUpdate = useCallback(async (data, index) => {
+    const handleProdutoUpdate = useCallback(async (data, index) => {
     try {
       setLoading(true);
       const formattedData = {
@@ -396,11 +396,15 @@ function App() {
         valorBonificado: Number(data.valorBonificado) || 0,
         areas: Number(data.areas) || 0
       };
-
+  
       const newProdutos = [...produtos];
       newProdutos[index] = formattedData;
       setProdutos(newProdutos);
-      await saveData();
+  
+      // Adiciona console.log para exibir o retorno do await saveData()
+      const saveResult = await saveData();
+      console.log('Resultado do saveData:', saveResult);
+  
       setEditingItem(null);
       showToast('Produto atualizado', 'success');
     } catch (error) {

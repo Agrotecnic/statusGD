@@ -65,7 +65,7 @@ const ProdutosTable = ({ userId, produtos, onEdit, onDelete, formatMoney, disabl
       try {
         const parsedProdutos = JSON.parse(produtos);
         if (Array.isArray(parsedProdutos)) {
-          return parsedProdutos.join(', ');
+          return parsedProdutos.map(p => p.nome).join(', ');
         }
       } catch (error) {
         console.error('Erro ao parsear JSON:', error);
@@ -97,82 +97,70 @@ const ProdutosTable = ({ userId, produtos, onEdit, onDelete, formatMoney, disabl
           )}
         </div>
       </div>
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-100">
-          <tr>
-            <th>
-              <input
-                type="checkbox"
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedProdutos(filteredProdutos.map((produto) => produto.id));
-                  } else {
-                    setSelectedProdutos([]);
-                  }
-                }}
-                checked={selectedProdutos.length === filteredProdutos.length}
-              />
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Cliente
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Produtos
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Valor Vendido
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Valor Bonificado
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Áreas
-            </th>
-            <th scope="col" className="relative px-6 py-3">
-              <span className="sr-only">Edit</span>
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {filteredProdutos.map((produto) => (
-            <tr key={produto.id} className="bg-white">
-              <td>
+      <div className="overflow-x-auto">
+        <table className="min-w-full bg-white">
+          <thead className="bg-gray-800 text-white">
+            <tr>
+              <th>
                 <input
                   type="checkbox"
-                  checked={selectedProdutos.includes(produto.id)}
-                  onChange={() => handleSelect(produto.id)}
-                />
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.cliente}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {renderProdutos(produto.produtos)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatMoney(produto.valorVendido)}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatMoney(produto.valorBonificado)}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{produto.areas}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  onClick={() => handleEdit(produto)}
-                  className="text-indigo-600 hover:text-indigo-900"
-                  disabled={disabled}
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => {
-                    console.log('Produto ID:', produto.id);
-                    handleDelete(produto.id);
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedProdutos(filteredProdutos.map((produto) => produto.id));
+                    } else {
+                      setSelectedProdutos([]);
+                    }
                   }}
-                  className="text-red-600 hover:text-red-900 ml-3"
-                  disabled={disabled}
-                >
-                  Excluir
-                </button>
-              </td>
+                  checked={selectedProdutos.length === filteredProdutos.length}
+                />
+              </th>
+              <th className="py-2 px-4 text-left">Cliente</th>
+              <th className="py-2 px-4 text-left">Produtos</th>
+              <th className="py-2 px-4 text-right">Valor Vendido</th>
+              <th className="py-2 px-4 text-right">Valor Bonificado</th>
+              <th className="py-2 px-4 text-right">Áreas</th>
+              <th className="py-2 px-4 text-right">Ações</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="text-gray-700">
+            {filteredProdutos.map((produto) => (
+              <tr key={produto.id}>
+                <td>
+                  <input
+                    type="checkbox"
+                    checked={selectedProdutos.includes(produto.id)}
+                    onChange={() => handleSelect(produto.id)}
+                  />
+                </td>
+                <td className="py-2 px-4">{produto.cliente}</td>
+                <td className="py-2 px-4">{renderProdutos(produto.produtos)}</td>
+                <td className="py-2 px-4 text-right">{formatMoney(produto.valorVendido)}</td>
+                <td className="py-2 px-4 text-right">{formatMoney(produto.valorBonificado)}</td>
+                <td className="py-2 px-4 text-right">{produto.areas}</td>
+                <td className="py-2 px-4 text-right">
+                  <button
+                    onClick={() => handleEdit(produto)}
+                    className="text-blue-500 hover:text-blue-700 mr-2"
+                    disabled={disabled}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => {
+                      console.log('Produto ID:', produto.id);
+                      handleDelete(produto.id);
+                    }}
+                    className="text-red-600 hover:text-red-900 ml-3"
+                    disabled={disabled}
+                  >
+                    Excluir
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
 
       {isModalOpen && (
         <Modal onClose={handleCloseModal}>
