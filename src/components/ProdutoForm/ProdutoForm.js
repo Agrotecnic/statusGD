@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import Autosuggest from 'react-autosuggest';
 import { fetchProdutos } from '../../models/Product'; // Certifique-se de que o caminho está correto
 
-const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading }) => {
+const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, isLoading }) => {
   const [formData, setFormData] = useState({
     cliente: initialData.cliente || '',
     valorVendido: initialData.valorVendido || 0,
@@ -168,16 +168,6 @@ const ProdutoForm = ({ initialData = {}, onSubmit, onCancel, onDelete, isLoading
       {renderField('areas', 'Áreas', 'number', 0)}
 
       <div className="flex justify-end space-x-2 pt-4">
-        {onDelete && (
-          <button
-            type="button"
-            onClick={onDelete}
-            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50"
-            disabled={isLoading}
-          >
-            Excluir
-          </button>
-        )}
         <button
           type="button"
           onClick={onCancel}
@@ -210,7 +200,6 @@ ProdutoForm.propTypes = {
   }),
   onSubmit: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,
-  onDelete: PropTypes.func,
   isLoading: PropTypes.bool
 };
 
