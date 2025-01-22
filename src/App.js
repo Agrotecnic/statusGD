@@ -768,6 +768,7 @@ function App() {
                   formatPercent={formatPercent}
                   showToast={showToast}
                   onDelete={handleProdutoRemove}
+                  handleEdit={handleProdutoUpdate}
                 />
               )
             }

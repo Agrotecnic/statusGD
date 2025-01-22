@@ -269,7 +269,6 @@ const DataEntryForm = ({ onSubmit, initialData = null }) => {
               </tbody>
             </table>
           </div>
-
           {/* Formulário de Novo Produto */}
           <div className="bg-gray-50 p-4 rounded-lg">
             <h4 className="text-md font-medium mb-3">Adicionar Novo Produto</h4>
