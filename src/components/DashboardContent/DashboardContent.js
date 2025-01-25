@@ -25,7 +25,7 @@ const DashboardContent = ({
   addProduto,
   formatMoney,
   formatPercent,
-  onDelete // Recebendo a função onDelete
+  onDelete, // Recebendo a função onDelete,
 }) => {
   const navigate = useNavigate();
 

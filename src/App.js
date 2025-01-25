@@ -25,6 +25,9 @@ import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebas
 import { ref, get, set } from 'firebase/database';
 // Importar auth e db da configuração centralizada
 import { auth, db } from './config/firebase';
+import { WhatsApp } from "@material-ui/icons";
+import saveData from '../src/api/produtos'; // Importe a função saveData
+
 
 function App() {
   // Authentication states
@@ -58,7 +61,8 @@ function App() {
     nome: "",
     regional: "",
     businessUnit: "",
-    dataAtualizacao: ""
+    dataAtualizacao: "",
+    WhatsApp: "" // Adicionando o campo WhatsApp
   });
 
   const [areas, setAreas] = useState({
@@ -346,11 +350,12 @@ function App() {
   const handleVendedorUpdate = useCallback(async (data) => {
     try {
       setLoading(true);
-      setVendedorInfo({
+      const updatedData = {
         ...data,
         dataAtualizacao: new Date().toLocaleString('pt-BR')
-      });
-      await saveData();
+      };
+      setVendedorInfo(updatedData);
+      await saveData(updatedData); // Certifique-se de passar os dados atualizados para saveData
       setEditingSection(null);
       showToast('Informações do vendedor atualizadas', 'success');
     } catch (error) {
@@ -360,7 +365,7 @@ function App() {
       setLoading(false);
     }
   }, [saveData, showToast]);
-
+   
   const handleAreasUpdate = useCallback(async (data) => {
     try {
       setLoading(true);
@@ -372,9 +377,9 @@ function App() {
         aImplantar: Number(data.aImplantar) || 0,
         finalizados: Number(data.finalizados) || 0  // Mantendo a versão mais recente
       };
-
+  
       // console.log('Atualizando áreas:', formattedData);
-
+  
       setAreas(formattedData);
       await saveData();
       setEditingSection(null);
@@ -387,7 +392,8 @@ function App() {
     }
   }, [saveData, showToast]);
 
-    const handleProdutoUpdate = useCallback(async (data, index) => {
+
+  const handleProdutoUpdate = useCallback(async (data, index) => {
     try {
       setLoading(true);
       const formattedData = {
@@ -402,7 +408,7 @@ function App() {
       setProdutos(newProdutos);
   
       // Adiciona console.log para exibir o retorno do await saveData()
-      const saveResult = await saveData();
+      const saveResult = await saveData(formattedData);
       console.log('Resultado do saveData:', saveResult);
   
       setEditingItem(null);

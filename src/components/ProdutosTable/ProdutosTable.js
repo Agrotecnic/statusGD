@@ -28,28 +28,21 @@ const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled }) => {
   };
 
   const filteredProdutos = produtos.filter((produto) =>
-    produto.cliente.toLowerCase().includes(searchTerm.toLowerCase())
+    produto.cliente.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    ((produto.nome && produto.nome.trim() !== '') || (produto.produtos && produto.produtos.some(p => p.nome.trim() !== '')))
   );
 
   useEffect(() => {
     console.log('Produtos filtrados:', filteredProdutos);
   }, [filteredProdutos]);
 
-  const renderProdutos = (produtos) => {
-    if (typeof produtos === 'string') {
-      try {
-        const parsedProdutos = JSON.parse(produtos);
-        if (Array.isArray(parsedProdutos)) {
-          return parsedProdutos.map(p => p.nome).join(', ');
-        }
-      } catch (error) {
-        console.error('Erro ao parsear JSON:', error);
-        return produtos;
-      }
-    } else if (Array.isArray(produtos)) {
-      return produtos.map(p => p.nome).join(', ');
+  const renderProdutos = (produto) => {
+    if (produto.nome && produto.nome.trim() !== '') {
+      return produto.nome;
+    } else if (Array.isArray(produto.produtos)) {
+      return produto.produtos.map(p => p.nome).join(', ');
     }
-    return produtos;
+    return 'N/A';
   };
 
   return (
@@ -79,8 +72,8 @@ const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled }) => {
           <tbody className="text-gray-700">
             {filteredProdutos.map((produto) => (
               <tr key={produto.id}>
-                <td className="py-2 px-4">{produto.cliente}</td>
-                <td className="py-2 px-4">{renderProdutos(produto.produtos)}</td>
+                <td className="py-2 px-4">{produto.cliente || 'N/A'}</td>
+                <td className="py-2 px-4 break-words">{renderProdutos(produto)}</td>
                 <td className="py-2 px-4 text-right">{formatMoney(produto.valorVendido)}</td>
                 <td className="py-2 px-4 text-right">{formatMoney(produto.valorBonificado)}</td>
                 <td className="py-2 px-4 text-right">{produto.areas}</td>
@@ -122,6 +115,7 @@ ProdutosTable.propTypes = {
       valorVendido: PropTypes.number,
       valorBonificado: PropTypes.number,
       areas: PropTypes.number,
+      nome: PropTypes.string, // Adicione o campo nome
       produtos: PropTypes.oneOfType([
         PropTypes.string, // JSON string
         PropTypes.arrayOf(
