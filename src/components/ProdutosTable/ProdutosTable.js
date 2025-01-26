@@ -3,10 +3,11 @@ import PropTypes from 'prop-types';
 import ProdutoForm from '../../../src/components/ProdutoForm/ProdutoForm'; // Importe o componente ProdutoForm
 import Modal from '../../../src/components/Modal/Modal'; // Importe o componente Modal
 
-const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled }) => {
+const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled, handleProdutoUpdateLocal }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduto, setSelectedProduto] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     console.log('Produtos recebidos:', produtos);
@@ -23,14 +24,21 @@ const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled }) => {
   };
 
   const handleFormSubmit = (formData) => {
-    onEdit(formData);
+    const index = produtos.findIndex(p => p.id === selectedProduto.id);
+    handleProdutoUpdateLocal(formData, index);
     handleCloseModal();
   };
 
-  const filteredProdutos = produtos.filter((produto) =>
-    produto.cliente.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    ((produto.nome && produto.nome.trim() !== '') || (produto.produtos && produto.produtos.some(p => p.nome.trim() !== '')))
-  );
+  let filteredProdutos = [];
+  try {
+    filteredProdutos = produtos.filter((produto) =>
+      produto.cliente.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      ((produto.nome && produto.nome.trim() !== '') || (produto.produtos && produto.produtos.some(p => p.nome.trim() !== '')))
+    );
+  } catch (err) {
+    console.error('Erro ao filtrar produtos:', err);
+    setError('Erro ao carregar a tabela de produtos.');
+  }
 
   useEffect(() => {
     console.log('Produtos filtrados:', filteredProdutos);
@@ -44,6 +52,11 @@ const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled }) => {
     }
     return 'N/A';
   };
+
+  if (error) {
+    console.error('Erro ao renderizar a tabela de produtos:', error);
+    return <div className="text-red-500">{error}</div>;
+  }
 
   return (
     <>
@@ -70,7 +83,7 @@ const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled }) => {
             </tr>
           </thead>
           <tbody className="text-gray-700">
-            {filteredProdutos.map((produto) => (
+            {filteredProdutos.map((produto, index) => (
               <tr key={produto.id}>
                 <td className="py-2 px-4">{produto.cliente || 'N/A'}</td>
                 <td className="py-2 px-4 break-words">{renderProdutos(produto)}</td>
@@ -128,7 +141,8 @@ ProdutosTable.propTypes = {
   ).isRequired,
   onEdit: PropTypes.func.isRequired,
   formatMoney: PropTypes.func.isRequired,
-  disabled: PropTypes.bool
+  disabled: PropTypes.bool,
+  handleProdutoUpdateLocal: PropTypes.func.isRequired
 };
 
 export default ProdutosTable;

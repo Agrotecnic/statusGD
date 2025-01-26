@@ -25,15 +25,14 @@ const DashboardContent = ({
   addProduto,
   formatMoney,
   formatPercent,
-  onDelete, // Recebendo a função onDelete,
+  onDelete,
+  handleProdutoUpdate, // Recebendo a função handleProdutoUpdate
+  handleProdutoUpdateLocal // Recebendo a função handleProdutoUpdateLocal
 }) => {
   const navigate = useNavigate();
 
   // Extraindo userId corretamente
   const userId = user.uid || user.id || user.proactiveRefresh?.user?.uid;
-
-  // console.log('userId:', userId);
-  // console.log(JSON.stringify(user));
 
   const normalizedVendedorInfo = {
     ...vendedorInfo,
@@ -188,6 +187,8 @@ const DashboardContent = ({
           onDelete={onDelete} // Passando a função onDelete
           formatMoney={formatMoney}
           disabled={loading}
+          handleProdutoUpdate={handleProdutoUpdate} // Passando a função handleProdutoUpdate
+          handleProdutoUpdateLocal={handleProdutoUpdateLocal} // Passando a função handleProdutoUpdateLocal
         />
       </div>
     </div>
@@ -225,7 +226,9 @@ DashboardContent.propTypes = {
   formatMoney: PropTypes.func.isRequired,
   formatPercent: PropTypes.func.isRequired,
   showToast: PropTypes.func.isRequired,
-  onDelete: PropTypes.func.isRequired // Adicionando a prop onDelete
+  onDelete: PropTypes.func.isRequired, // Adicionando a prop onDelete
+  handleProdutoUpdate: PropTypes.func.isRequired, // Adicionando a prop handleProdutoUpdate
+  handleProdutoUpdateLocal: PropTypes.func.isRequired // Adicionando a prop handleProdutoUpdateLocal
 };
 
 export default DashboardContent;

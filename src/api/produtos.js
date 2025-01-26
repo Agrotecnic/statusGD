@@ -1,6 +1,5 @@
 import { ref, remove } from 'firebase/database';
 import { db } from '../config/firebase';
-import axios from 'axios';
 
 export const deleteProduto = async (userId, produtoId) => {
   try {
@@ -13,16 +12,6 @@ export const deleteProduto = async (userId, produtoId) => {
     console.log('Produto deletado com sucesso!');
   } catch (error) {
     console.error('Erro ao deletar produto:', error);
-    throw error;
-  }
-};
-
-export const saveProduto = async (userId, produto) => {
-  try {
-    const response = await axios.post(`/api/users/${userId}/produtos`, produto);
-    return response.data;
-  } catch (error) {
-    console.error('Erro ao salvar produto:', error);
     throw error;
   }
 };

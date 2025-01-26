@@ -49,7 +49,7 @@ const produtosComId = produtos.map((produto, index) => ({
   ...produto,
   id: produto.id || `produto-${index}`
 }));
-
+console.log('aqui nessa page')
 DashboardContent.propTypes = {
   user: PropTypes.shape({
     email: PropTypes.string,
