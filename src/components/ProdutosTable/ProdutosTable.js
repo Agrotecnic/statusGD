@@ -33,7 +33,7 @@ const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled, handle
   try {
     filteredProdutos = produtos.filter((produto) =>
       produto.cliente.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      ((produto.nome && produto.nome.trim() !== '') || (produto.produtos && produto.produtos.some(p => p.nome.trim() !== '')))
+      ((produto.nome && produto.nome.trim() !== '') || (Array.isArray(produto.produtos) && produto.produtos.some(p => p.nome.trim() !== '')))
     );
   } catch (err) {
     console.error('Erro ao filtrar produtos:', err);
