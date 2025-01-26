@@ -6,6 +6,7 @@ import Modal from '../../../src/components/Modal/Modal'; // Importe o componente
 const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled, handleProdutoUpdateLocal }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduto, setSelectedProduto] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [error, setError] = useState(null);
 
@@ -13,19 +14,26 @@ const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled, handle
     console.log('Produtos recebidos:', produtos);
   }, [produtos]);
 
-  const handleEdit = (produto) => {
+  const handleEdit = (produto, index) => {
+    console.log('Produto selecionado para edição:', produto);
     setSelectedProduto(produto);
+    setSelectedIndex(index);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedProduto(null);
+    setSelectedIndex(null);
   };
 
   const handleFormSubmit = (formData) => {
-    const index = produtos.findIndex(p => p.id === selectedProduto.id);
-    handleProdutoUpdateLocal(formData, index);
+    console.log('Dados do formulário submetidos:', formData);
+    console.log('Produto selecionado:', selectedProduto);
+    console.log('Índice do produto selecionado:', selectedIndex);
+    if (selectedIndex !== null) {
+      handleProdutoUpdateLocal(formData, selectedIndex);
+    }
     handleCloseModal();
   };
 
@@ -84,7 +92,7 @@ const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled, handle
           </thead>
           <tbody className="text-gray-700">
             {filteredProdutos.map((produto, index) => (
-              <tr key={produto.id}>
+              <tr key={index}>
                 <td className="py-2 px-4">{produto.cliente || 'N/A'}</td>
                 <td className="py-2 px-4 break-words">{renderProdutos(produto)}</td>
                 <td className="py-2 px-4 text-right">{formatMoney(produto.valorVendido)}</td>
@@ -92,7 +100,7 @@ const ProdutosTable = ({ userId, produtos, onEdit, formatMoney, disabled, handle
                 <td className="py-2 px-4 text-right">{produto.areas}</td>
                 <td className="py-2 px-4 text-right">
                   <button
-                    onClick={() => handleEdit(produto)}
+                    onClick={() => handleEdit(produto, index)}
                     className="text-blue-500 hover:text-blue-700 mr-2"
                     disabled={disabled}
                   >
@@ -123,7 +131,7 @@ ProdutosTable.propTypes = {
   userId: PropTypes.string.isRequired,
   produtos: PropTypes.arrayOf(
     PropTypes.shape({
-      id: PropTypes.string.isRequired,
+      id: PropTypes.string,
       cliente: PropTypes.string,
       valorVendido: PropTypes.number,
       valorBonificado: PropTypes.number,

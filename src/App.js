@@ -393,40 +393,43 @@ function App() {
   }, [saveData, showToast]);
 
     
-    const handleProdutoUpdate = useCallback(async (data, index) => {
-      try {
-        setLoading(true);
-        const formattedData = {
-          ...data,
-          valorVendido: Number(data.valorVendido) || 0,
-          valorBonificado: Number(data.valorBonificado) || 0,
-          areas: Number(data.areas) || 0
-        };
-  
-        const newProdutos = [...produtos];
-        newProdutos[index] = formattedData;
-        setProdutos(newProdutos);
-  
-        // Adiciona console.log para exibir o retorno do await saveData()
-        const saveResult = await saveData(formattedData);
-        console.log('Resultado do saveData:', saveResult);
-  
-        setEditingItem(null);
-        showToast('Produto atualizado', 'success');
-      } catch (error) {
-        console.error('Erro ao atualizar produto:', error);
-        showToast('Erro ao atualizar produto', 'error');
-      } finally {
-        setLoading(false);
-      }
-    }, [produtos, saveData, showToast]);
-  
-    const handleProdutoUpdateLocal = (data, index) => {
+  const handleProdutoUpdate = useCallback(async (data, index) => {
+    try {
+      setLoading(true);
+      const formattedData = {
+        ...data,
+        valorVendido: Number(data.valorVendido) || 0,
+        valorBonificado: Number(data.valorBonificado) || 0,
+        areas: Number(data.areas) || 0
+      };
+
       const newProdutos = [...produtos];
-      newProdutos[index] = data;
+      newProdutos[index] = formattedData;
       setProdutos(newProdutos);
-      handleProdutoUpdate(data, index); // Chama handleProdutoUpdate para persistir as alterações
-    };
+
+      // Adiciona console.log para exibir o retorno do await saveData()
+      const saveResult = await saveData(formattedData);
+      console.log('Resultado do saveData:', saveResult);
+
+      setEditingItem(null);
+      showToast('Produto atualizado', 'success');
+    } catch (error) {
+      console.error('Erro ao atualizar produto:', error);
+      showToast('Erro ao atualizar produto', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [produtos, saveData, showToast]);
+
+  const handleProdutoUpdateLocal = useCallback((data, index) => {
+    setProdutos((prevProdutos) => {
+      const newProdutos = [...prevProdutos];
+      newProdutos[index] = data;
+      console.log('Produtos atualizados localmente:', newProdutos);
+      return newProdutos;
+    });
+  }, []);
+
 
   const handleProdutoRemove = useCallback(async (produtoId) => {
     try {
